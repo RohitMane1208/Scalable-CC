@@ -1,7 +1,10 @@
+import json
+import uuid
 from django.shortcuts import render
 from django.utils import timezone
 from django.urls import reverse
-import uuid
+from django.views.decorators.csrf import csrf_exempt  # Added for API access
+from django.http import JsonResponse  # Optional: for better API responses
 
 from .models import EmailVerification
 from .utils import (
@@ -12,12 +15,22 @@ from .utils import (
     check_role_based
 )
 
+@csrf_exempt
 def verify_email(request):
     context = {}
     details = {}
 
     if request.method == "POST":
-        email = request.POST.get("email", "").strip()
+        # --- NEW: Handle both JSON and Form data ---
+        if request.content_type == 'application/json':
+            try:
+                data = json.loads(request.body)
+                email = data.get("email", "").strip()
+            except json.JSONDecodeError:
+                email = ""
+        else:
+            email = request.POST.get("email", "").strip()
+        # --------------------------------------------
 
         if "@" not in email:
             context["result"] = "❌ Invalid Email Format"
@@ -25,7 +38,7 @@ def verify_email(request):
 
         domain = email.split("@")[1].lower()
 
-        # 🔍 Run validations
+        # 🔍 Run validations (Your existing logic)
         format_valid = validate_syntax(email)
         mx_valid = check_mx_record(domain)
         is_disposable = check_disposable(domain)
@@ -60,7 +73,7 @@ def verify_email(request):
 
         context["details"] = details
 
-        # 🚨 STRICT CONDITION
+        # 🚨 STRICT CONDITION (Your existing logic)
         if (
             format_valid 
             and mx_valid 
@@ -82,6 +95,10 @@ def verify_email(request):
                     context["result"] = "⚠️ Validation passed, but email service failed to send."
         else:
             context["result"] = "❌ Email failed authenticity checks (Disposable or Role-based)."
+
+        # If the request came from an API (JSON), you might want to return JSON instead of HTML
+        if request.content_type == 'application/json':
+            return JsonResponse({"result": context["result"], "details": details})
 
     return render(request, "verify.html", context)
 
