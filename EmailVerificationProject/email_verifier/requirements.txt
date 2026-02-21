@@ -17,3 +17,5 @@ pytz==2022.7.1
 # Essential Build Tools (Fixes the PyYAML/Python 3.14 error)
 setuptools
 typing_extensions==4.15.0
+
+django-cors-headers
