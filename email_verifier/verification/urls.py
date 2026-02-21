@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views #update
+from . import views #update1
 
 urlpatterns = [
     path('', views.verify_email, name='verify_email'),
