@@ -98,3 +98,7 @@ def verify_token(request, token):
     except EmailVerification.DoesNotExist:
         message = "❌ Invalid or expired verification link."
     return render(request, "verification_result.html", {"message": message})
+    
+    def verify_email_landing(request):
+    # You can add logic here to actually verify a token in the URL
+    return render(request, 'success.html')
