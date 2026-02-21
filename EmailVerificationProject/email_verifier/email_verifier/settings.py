@@ -120,4 +120,5 @@ STATIC_URL = 'static/'
 
 CSRF_TRUSTED_ORIGINS = [
     'https://93cc690fe36140d4a801628a076d6736.vfs.cloud9.us-east-1.amazonaws.com'
+    'http://email-verifier-env.eba-mdagwhcq.us-east-1.elasticbeanstalk.com/'
 ]
