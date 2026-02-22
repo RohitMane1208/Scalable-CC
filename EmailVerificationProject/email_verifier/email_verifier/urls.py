@@ -1,24 +1,13 @@
-"""
-URL configuration for email_verifier project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/6.0/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
+# email_verifier/urls.py
 from django.contrib import admin
 from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/email/', include('verification.urls')),
-    path('api/status/', include('verification.urls')),
+    
+    # This links the 'api/' prefix to all paths in your app
+    path('api/', include('verification.urls')),
+    
+    # Optional: If you want the root URL to show the email check page
+    path('', include('verification.urls')), 
 ]
