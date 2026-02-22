@@ -44,7 +44,7 @@ def verify_email(request):
         is_role_based = check_role_based(email)
 
         # 🛠️ New: Get Typo Suggestion
-        suggestion = get_domain_suggestion(domain) # 2. CALL THE UTILITY
+        suggestion = get_domain_suggestion(domain) # 2. CALL THE UTILIT
 
         common_providers = ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "icloud.com", "aol.com"]
         is_common = domain in common_providers
