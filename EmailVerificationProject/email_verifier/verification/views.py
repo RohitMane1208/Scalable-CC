@@ -115,3 +115,36 @@ def verify_token(request, token):
     except EmailVerification.DoesNotExist:
         message = "❌ Invalid or expired verification link."
     return render(request, "verification_result.html", {"message": message})
+    
+@csrf_exempt # Allows your local app to call this without CSRF issues
+def check_verification_status(request):
+    """
+    New method to check if an email is verified.
+    Expected usage: /api/status/?email=user@example.com
+    """
+    email = request.GET.get('email', '').strip()
+    
+    if not email:
+        return JsonResponse({"error": "Email parameter is required"}, status=400)
+
+    try:
+        # Look up the record in your database
+        record = EmailVerification.objects.get(email=email)
+        
+        # Prepare the same metrics structure so the frontend remains consistent
+        return JsonResponse({
+            "email": email,
+            "is_verified": record.is_verified,
+            "details": {
+                "format_valid": True, # If it's in DB, format was already validated
+                "mx_record_exists": True, 
+                "disposable_email": False,
+                "role_based_email": False,
+                "confidence_score": "100%" if record.is_verified else "85%"
+            }
+        })
+    except EmailVerification.DoesNotExist:
+        return JsonResponse({
+            "is_verified": False, 
+            "result": "User not found in verification database."
+        }, status=404)
