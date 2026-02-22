@@ -3,8 +3,8 @@ import uuid
 from django.shortcuts import render
 from django.utils import timezone
 from django.urls import reverse
-from django.views.decorators.csrf import csrf_exempt  # Added for API access
-from django.http import JsonResponse  # Optional: for better API responses
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
 
 from .models import EmailVerification
 from .utils import (
@@ -12,7 +12,8 @@ from .utils import (
     validate_syntax,
     check_mx_record,
     check_disposable,
-    check_role_based
+    check_role_based,
+    get_domain_suggestion  # 1. ADDED THIS IMPORT
 )
 
 @csrf_exempt
@@ -21,7 +22,6 @@ def verify_email(request):
     details = {}
 
     if request.method == "POST":
-        # --- NEW: Handle both JSON and Form data ---
         if request.content_type == 'application/json':
             try:
                 data = json.loads(request.body)
@@ -30,7 +30,6 @@ def verify_email(request):
                 email = ""
         else:
             email = request.POST.get("email", "").strip()
-        # --------------------------------------------
 
         if "@" not in email:
             context["result"] = "❌ Invalid Email Format"
@@ -38,13 +37,15 @@ def verify_email(request):
 
         domain = email.split("@")[1].lower()
 
-        # 🔍 Run validations (Your existing logic)
+        # 🔍 Run validations
         format_valid = validate_syntax(email)
         mx_valid = check_mx_record(domain)
         is_disposable = check_disposable(domain)
         is_role_based = check_role_based(email)
 
-        # 🛠️ Calculate "Is Common Domain"
+        # 🛠️ New: Get Typo Suggestion
+        suggestion = get_domain_suggestion(domain) # 2. CALL THE UTILITY
+
         common_providers = ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "icloud.com", "aol.com"]
         is_common = domain in common_providers
 
@@ -60,7 +61,7 @@ def verify_email(request):
 
         final_score = max(0, min(100, score))
 
-        # 📊 Prepare metrics output for verify.html
+        # 📊 Prepare metrics output
         details = {
             "email": email,
             "format_valid": format_valid,
@@ -68,18 +69,14 @@ def verify_email(request):
             "disposable_email": is_disposable,
             "role_based_email": is_role_based,
             "is_common_domain": is_common,
+            "suggestion": suggestion, # 3. ADDED TO DICTIONARY
             "confidence_score": f"{final_score}%"
         }
 
         context["details"] = details
 
-        # 🚨 STRICT CONDITION (Your existing logic)
-        if (
-            format_valid 
-            and mx_valid 
-            and not is_disposable 
-            and not is_role_based
-        ):
+        # 🚨 STRICT CONDITION
+        if (format_valid and mx_valid and not is_disposable and not is_role_based):
             verification_obj, created = EmailVerification.objects.get_or_create(email=email)
             if verification_obj.is_verified:
                 context["result"] = "✅ Email already verified."
@@ -94,13 +91,14 @@ def verify_email(request):
                 else:
                     context["result"] = "⚠️ Validation passed, but email service failed to send."
         else:
-            context["result"] = "❌ Email failed authenticity checks (Disposable or Role-based)."
+            context["result"] = "❌ Email failed authenticity checks."
 
-        # If the request came from an API (JSON), you might want to return JSON instead of HTML
         if request.content_type == 'application/json':
             return JsonResponse({"result": context["result"], "details": details})
 
     return render(request, "verify.html", context)
+
+# ... (keep verify_token and check_verification_status as they are)
 
 def verify_token(request, token):
     try:

@@ -93,3 +93,14 @@ def send_verification_email(email, verification_link):
     except requests.RequestException as e:
         print(f"Connection Error: {e}")
         return False
+        
+# ✅ Typo Detection
+def get_domain_suggestion(domain):
+    domain = domain.lower().strip()
+    # Find the closest match from COMMON_DOMAINS
+    # cutoff=0.8 means it must be 80% similar to be suggested
+    matches = difflib.get_close_matches(domain, COMMON_DOMAINS, n=1, cutoff=0.8)
+    
+    if matches and matches[0] != domain:
+        return matches[0]  # Returns 'gmail.com' for 'gmil.com'
+    return None
