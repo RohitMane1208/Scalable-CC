@@ -1,6 +1,6 @@
 import json
 import uuid
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.utils import timezone
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
@@ -8,141 +8,96 @@ from django.http import JsonResponse
 
 from .models import EmailVerification
 from .utils import (
-    send_verification_email,
-    validate_syntax,
-    check_mx_record,
-    check_disposable,
-    check_role_based,
-    get_domain_suggestion  # 1. ADDED THIS IMPORT
+    send_verification_email, validate_syntax, check_mx_record,
+    check_disposable, check_role_based, get_domain_suggestion, COMMON_DOMAINS
 )
 
 @csrf_exempt
 def verify_email(request):
-    context = {}
-    details = {}
-
+    # 1. Standardize Email Extraction
     if request.method == "POST":
         if request.content_type == 'application/json':
-            try:
-                data = json.loads(request.body)
-                email = data.get("email", "").strip()
-            except json.JSONDecodeError:
-                email = ""
+            data = json.loads(request.body) if request.body else {}
+            email = data.get("email", "").strip()
         else:
             email = request.POST.get("email", "").strip()
 
-        if "@" not in email:
-            context["result"] = "❌ Invalid Email Format"
-            return render(request, "verify.html", context)
+        if not email or "@" not in email:
+            return _render_or_json(request, {"result": "❌ Invalid Email Format"}, {})
 
+        # 2. Validation Logic
         domain = email.split("@")[1].lower()
-
-        # 🔍 Run validations
-        format_valid = validate_syntax(email)
-        mx_valid = check_mx_record(domain)
-        is_disposable = check_disposable(domain)
-        is_role_based = check_role_based(email)
-
-        # 🛠️ New: Get Typo Suggestion
-        suggestion = get_domain_suggestion(domain) # 2. CALL THE UTILIT
-
-        common_providers = ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "icloud.com", "aol.com"]
-        is_common = domain in common_providers
-
-        # 📈 Calculate Confidence Score
-        score = 0
-        if format_valid: score += 30
-        if mx_valid: score += 40
-        if not is_disposable: score += 15
-        if not is_role_based: score += 15
-        
-        if is_disposable: score -= 50
-        if not format_valid: score = 0
-
-        final_score = max(0, min(100, score))
-
-        # 📊 Prepare metrics output
-        details = {
-            "email": email,
-            "format_valid": format_valid,
-            "mx_record_exists": mx_valid,
-            "disposable_email": is_disposable,
-            "role_based_email": is_role_based,
-            "is_common_domain": is_common,
-            "suggestion": suggestion, # 3. ADDED TO DICTIONARY
-            "confidence_score": f"{final_score}%"
+        results = {
+            "format_valid": validate_syntax(email),
+            "mx_record_exists": check_mx_record(domain),
+            "disposable_email": check_disposable(domain),
+            "role_based_email": check_role_based(email),
         }
 
-        context["details"] = details
+        # 3. Metrics and Scoring
+        score = (30 if results["format_valid"] else 0) + \
+                (40 if results["mx_record_exists"] else 0) + \
+                (15 if not results["disposable_email"] else 0) + \
+                (15 if not results["role_based_email"] else 0)
+        
+        if results["disposable_email"]: score -= 50
+        
+        details = {
+            **results,
+            "email": email,
+            "is_common_domain": domain in COMMON_DOMAINS,
+            "suggestion": get_domain_suggestion(domain),
+            "confidence_score": f"{max(0, min(100, score))}%"
+        }
 
-        # 🚨 STRICT CONDITION
-        if (format_valid and mx_valid and not is_disposable and not is_role_based):
-            verification_obj, created = EmailVerification.objects.get_or_create(email=email)
-            if verification_obj.is_verified:
-                context["result"] = "✅ Email already verified."
+        # 4. Verification Link Logic
+        if all([results["format_valid"], results["mx_record_exists"], 
+                not results["disposable_email"], not results["role_based_email"]]):
+            
+            obj, _ = EmailVerification.objects.get_or_create(email=email)
+            if obj.is_verified:
+                msg = "✅ Email already verified."
             else:
-                verification_obj.token = uuid.uuid4()
-                verification_obj.save()
-                verification_link = request.build_absolute_uri(
-                    reverse('verify_token', args=[verification_obj.token])
-                )
-                if send_verification_email(email, verification_link):
-                    context["result"] = "📩 Verification email sent successfully."
-                else:
-                    context["result"] = "⚠️ Validation passed, but email service failed to send."
+                obj.token = uuid.uuid4()
+                obj.save()
+                link = request.build_absolute_uri(reverse('verify_token', args=[obj.token]))
+                msg = "📩 Verification email sent." if send_verification_email(email, link) else "⚠️ Email service failed."
         else:
-            context["result"] = "❌ Email failed authenticity checks."
+            msg = "❌ Email failed authenticity checks."
 
-        if request.content_type == 'application/json':
-            return JsonResponse({"result": context["result"], "details": details})
+        return _render_or_json(request, {"result": msg, "details": details}, details)
 
+    return render(request, "verify.html")
+
+def _render_or_json(request, context, details):
+    """Helper to return JSON for API calls and HTML for browser."""
+    if request.content_type == 'application/json':
+        return JsonResponse({"result": context.get("result"), "details": details})
     return render(request, "verify.html", context)
 
-# ... (keep verify_token and check_verification_status as they are)
-
 def verify_token(request, token):
-    try:
-        verification = EmailVerification.objects.get(token=token)
-        if verification.is_verified:
-            message = "✅ Email already verified."
-        else:
-            verification.is_verified = True
-            verification.verified_at = timezone.now()
-            verification.save()
-            message = "🎉 Email successfully verified!"
-    except EmailVerification.DoesNotExist:
-        message = "❌ Invalid or expired verification link."
-    return render(request, "verification_result.html", {"message": message})
-    
-@csrf_exempt # Allows your local app to call this without CSRF issues
+    verification = get_object_or_404(EmailVerification, token=token)
+    if not verification.is_verified:
+        verification.is_verified = True
+        verification.verified_at = timezone.now()
+        verification.save()
+        msg = "🎉 Email successfully verified!"
+    else:
+        msg = "✅ Email already verified."
+    return render(request, "verification_result.html", {"message": msg})
+
+@csrf_exempt
 def check_verification_status(request):
-    """
-    New method to check if an email is verified.
-    Expected usage: /api/status/?email=user@example.com
-    """
     email = request.GET.get('email', '').strip()
-    
     if not email:
-        return JsonResponse({"error": "Email parameter is required"}, status=400)
+        return JsonResponse({"error": "Email required"}, status=400)
 
     try:
-        # Look up the record in your database
         record = EmailVerification.objects.get(email=email)
-        
-        # Prepare the same metrics structure so the frontend remains consistent
         return JsonResponse({
             "email": email,
             "is_verified": record.is_verified,
-            "details": {
-                "format_valid": True, # If it's in DB, format was already validated
-                "mx_record_exists": True, 
-                "disposable_email": False,
-                "role_based_email": False,
-                "confidence_score": "100%" if record.is_verified else "85%"
-            }
+            "details": {"confidence_score": "100%" if record.is_verified else "85%"}
         })
     except EmailVerification.DoesNotExist:
-        return JsonResponse({
-            "is_verified": False, 
-            "result": "User not found in verification database."
-        }, status=404)
+        return JsonResponse({"is_verified": False, "result": "Not found"}, status=404)
