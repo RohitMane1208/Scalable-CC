@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-lg p-4">
+            <div class="text-center mb-4">
+                <i class="bi bi-ticket-perforated text-success display-4"></i>
+                <h2 class="fw-bold mt-2">Book Your Journey</h2>
+                <p class="text-muted">Verified ticketing for Irish Rail</p>
+            </div>
+            
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        <i class="bi bi-exclamation-octagon-fill me-2"></i> {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="POST" id="bookingForm">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label for="email" class="form-label fw-semibold">Email Address</label>
+                    <div class="input-group has-validation">
+                        <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                        <input type="email" name="email" id="emailInput" class="form-control" placeholder="name@example.com" required>
+                    </div>
+                    <div id="emailSuggestion" class="mt-2 small text-primary d-none" style="cursor: pointer;">
+                        <i class="bi bi-lightbulb"></i> Did you mean <strong id="suggestedEmail"></strong>?
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="train" class="form-label fw-semibold">Select Route</label>
+                    <select name="train_id" class="form-select" required>
+                        <option value="" selected disabled>Choose a train...</option>
+                        <option value="DART_102">DART: Howth to Greystones</option>
+                        <option value="IC_772">InterCity: Dublin to Galway</option>
+                        <option value="IC_884">InterCity: Dublin to Cork</option>
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label for="carriage" class="form-label fw-semibold">Carriage Preference</label>
+                    <div class="d-flex gap-2">
+                        {% for c in "ABCDE" %}
+                        <input type="radio" class="btn-check" name="carriage" id="car{{c}}" value="{{c}}" {% if c == 'A' %}checked{% endif %}>
+                        <label class="btn btn-outline-success flex-fill" for="car{{c}}">{{c}}</label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-success btn-lg fw-bold">
+                        Verify & Book Ticket
+                    </button>
+                </div>
+            </form>
+            
+            <div class="mt-3 text-center">
+                <p class="small text-muted">
+                    <i class="bi bi-shield-lock-fill"></i> Your identity is verified via RailGuard Trust Engine.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const emailInput = document.getElementById('emailInput');
+    const suggestionBox = document.getElementById('emailSuggestion');
+    const suggestedText = document.getElementById('suggestedEmail');
+
+    emailInput.addEventListener('blur', function() {
+        const email = this.value;
+        if (email.includes('@')) {
+            // This calls your Django view which in turn calls your Verifier API
+            fetch(`/api/check-typo/?email=${email}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.suggestion) {
+                        suggestedText.innerText = data.suggestion;
+                        suggestionBox.classList.remove('d-none');
+                    } else {
+                        suggestionBox.classList.add('d-none');
+                    }
+                });
+        }
+    });
+
+    // Auto-fix if user clicks the suggestion
+    suggestionBox.addEventListener('click', function() {
+        const domain = suggestedText.innerText;
+        const prefix = emailInput.value.split('@')[0];
+        emailInput.value = `${prefix}@${domain}`;
+        suggestionBox.classList.add('d-none');
+    });
+</script>
+{% endblock %}
