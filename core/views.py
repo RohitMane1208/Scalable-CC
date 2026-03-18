@@ -6,13 +6,64 @@ from django.contrib import messages
 from .services import RailService
 from .models import Ticket
 
+# Full station and track data for Irish Rail routes
+STATION_DATA = {
+    'DART_102': {
+        'start_name': 'Dublin Connolly',
+        'end_name': 'Greystones',
+        'stations': [
+            {'name': 'Tara Street', 'coords': [53.3470, -6.2542]},
+            {'name': 'Dublin Pearse', 'coords': [53.3433, -6.2491]},
+            {'name': 'Lansdowne Road', 'coords': [53.3347, -6.2289]},
+            {'name': 'Dun Laoghaire', 'coords': [53.2952, -6.1345]},
+            {'name': 'Bray', 'coords': [53.2044, -6.1052]},
+        ],
+        'track': [
+            [53.3473, -6.2591], [53.3433, -6.2391], [53.3323, -6.2263], 
+            [53.3031, -6.1772], [53.2965, -6.1332], [53.2758, -6.1118], 
+            [53.2205, -6.1075], [53.2044, -6.1052], [53.1444, -6.0644]
+        ]
+    },
+    'IC_772': {
+        'start_name': 'Dublin Heuston',
+        'end_name': 'Galway Ceannt',
+        'stations': [
+            {'name': 'Tullamore', 'coords': [53.2750, -7.4942]},
+            {'name': 'Athlone', 'coords': [53.4251, -7.9351]},
+            {'name': 'Ballinasloe', 'coords': [53.3283, -8.2215]},
+            {'name': 'Athenry', 'coords': [53.2989, -8.7441]},
+        ],
+        'track': [
+            [53.3464, -6.2945], [53.3364, -6.6133], [53.3102, -7.0655], 
+            [53.2750, -7.4942], [53.4241, -7.9333], [53.3281, -8.2215], 
+            [53.2989, -8.7441], [53.2743, -9.0477]
+        ]
+    },
+    'IC_884': {
+        'start_name': 'Dublin Heuston',
+        'end_name': 'Cork Kent',
+        'stations': [
+            {'name': 'Kildare', 'coords': [53.1581, -6.9115]},
+            {'name': 'Portlaoise', 'coords': [53.0345, -7.2991]},
+            {'name': 'Thurles', 'coords': [52.6801, -7.8188]},
+            {'name': 'Limerick Junction', 'coords': [52.5015, -8.2721]},
+            {'name': 'Mallow', 'coords': [52.1391, -8.6545]},
+        ],
+        'track': [
+            [53.3464, -6.2945], [53.2428, -6.6578], [53.1581, -6.9115], 
+            [53.0345, -7.2991], [52.6801, -7.8188], [52.5015, -8.2721], 
+            [52.1391, -8.6545], [51.9018, -8.4681]
+        ]
+    },
+}
+
 def booking_page(request):
     if request.method == "POST":
         email = request.POST.get("email", "").strip()
         train_id = request.POST.get("train_id")
         carriage = request.POST.get("carriage")
 
-        # 1. Check Identity Status
+        # API Check: Is user already verified?
         status_check = RailService.get_verification_status(email)
 
         if status_check.get("is_verified"):
@@ -24,62 +75,44 @@ def booking_page(request):
             return redirect('dashboard')
         
         else:
-            # 2. Call Validation API
+            # API Check: Send verification email
             api_response = RailService.validate_and_send(email)
+            if api_response.get("status") == "fail":
+                messages.error(request, "Identity verification failed. Please check your email address.")
+            else:
+                messages.info(request, f"Identity check initiated. Please click the link sent to {email}.")
             
-            # Extract the specific metrics from your API output
-            metrics = api_response.get("details", {})
-            mx_exists = metrics.get("mx_record_exists", True) # Default to True unless API says No
-            format_valid = metrics.get("format_valid", True)
+            return render(request, 'booking.html', {"station_data": STATION_DATA})
 
-            # THE GATEKEEPER LOGIC:
-            # If MX record is No OR Format is Invalid OR API status is 'fail'
-            if api_response.get("status") == "fail" or mx_exists is False or format_valid is False:
-                
-                # Create a specific error message based on the API metrics
-                if mx_exists is False:
-                    error_msg = f"Invalid Email: The domain for '{email}' does not have a valid mail server (MX record)."
-                elif format_valid is False:
-                    error_msg = "Invalid Email: The format of this email is incorrect."
-                else:
-                    error_msg = api_response.get("message", "Email verification failed.")
+    return render(request, 'booking.html', {"station_data": STATION_DATA})
 
-                messages.error(request, error_msg)
-                return render(request, 'booking.html', {"email": email})
-
-            # 3. Only if everything is valid, say the mail was sent
-            messages.info(request, "Identity check initiated. Please verify your email via the link sent to your inbox.")
-            return render(request, 'booking.html')
-
-    return render(request, 'booking.html')
-
-# 2. THE PASSENGER DASHBOARD (The missing attribute)
 def dashboard(request):
-    # Retrieve the ticket from session
     ticket_id = request.session.get('ticket_id')
     active_ticket = Ticket.objects.filter(id=ticket_id).first()
     
-    # Security: Kick out unverified users
     if not active_ticket:
         messages.warning(request, "Access Denied. Please verify your identity first.")
         return redirect('booking')
     
-    context = {"ticket": active_ticket}
+    route_info = STATION_DATA.get(active_ticket.train_id)
+    
+    context = {
+        "ticket": active_ticket,
+        "route": route_info
+    }
     
     if request.method == "POST":
         category = request.POST.get("emergency_type")
+        # Trigger real-time emergency alert via RailService
         success = RailService.trigger_emergency(
-            active_ticket.train_id, 
-            active_ticket.carriage_no, 
-            category
+            active_ticket.train_id, active_ticket.carriage_no, category
         )
         context["alert_sent"] = success
         if success:
-            messages.info(request, f"Emergency alert ({category}) has been dispatched.")
+            messages.success(request, f"Emergency {category} alert has been dispatched to Irish Rail Control.")
 
     return render(request, 'dashboard.html', context)
 
-# 3. TYPO CHECK (For JavaScript AJAX)
 def api_check_typo(request):
     email = request.GET.get('email', '')
     if email:
@@ -87,10 +120,8 @@ def api_check_typo(request):
         return JsonResponse({"suggestion": data.get("suggestion")})
     return JsonResponse({"suggestion": None})
 
-# 4. TOKEN VERIFICATION (Landing page for email link)
 def verify_ticket_token(request, token):
-    return render(request, 'verification_result.html', {"message": "Identity Confirmed. You may now book your journey."})
+    return render(request, 'verification_result.html', {"message": "Identity Confirmed. You can now return to the booking page."})
 
-# 5. EMERGENCY ACTION (AJAX Placeholder)
 def trigger_emergency_action(request):
     return JsonResponse({"status": "received"})
