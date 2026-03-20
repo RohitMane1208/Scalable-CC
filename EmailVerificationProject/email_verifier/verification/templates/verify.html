@@ -5,73 +5,67 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Email Verification</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; margin: 40px auto; max-width: 600px; background-color: #f4f7f6; line-height: 1.6; }
-        .container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        h2 { color: #2c3e50; margin-top: 0; }
-        form { margin-bottom: 25px; display: flex; gap: 10px; }
-        input[type="email"] { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px; }
-        button { padding: 12px 24px; font-size: 16px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background 0.3s; }
-        button:hover { background-color: #0056b3; }
-        .result { padding: 15px; border-radius: 4px; margin-bottom: 20px; font-weight: bold; background-color: #e9ecef; }
-        hr { border: 0; border-top: 1px solid #eee; margin: 25px 0; }
-        .details-list { list-style: none; padding: 0; }
-        .details-list li { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f9f9f9; }
-        .label { font-weight: 600; color: #555; }
-        .status-yes { color: #28a745; font-weight: bold; } /* Green */
-        .status-no { color: #dc3545; font-weight: bold; }  /* Red */
-        .score-val { color: #007bff; font-weight: bold; font-size: 1.1em; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 40px auto; max-width: 600px; background-color: #f8f9fa; color: #333; }
+        .container { background: white; padding: 35px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        h2 { color: #1a202c; margin-bottom: 20px; font-weight: 700; }
+        form { display: flex; gap: 12px; margin-bottom: 30px; }
+        input[type="email"] { flex: 1; padding: 14px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 16px; transition: border-color 0.2s; }
+        input[type="email"]:focus { border-color: #4299e1; outline: none; }
+        button { padding: 14px 28px; font-size: 16px; background-color: #2b6cb0; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: transform 0.1s, background 0.2s; }
+        button:hover { background-color: #2c5282; }
+        button:active { transform: scale(0.98); }
+        .result-box { padding: 16px; border-radius: 8px; margin-bottom: 24px; text-align: center; font-weight: 600; background-color: #edf2f7; border-left: 5px solid #2b6cb0; }
+        .details-list { list-style: none; padding: 0; margin-top: 20px; }
+        .details-list li { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f1f5f9; }
+        .label { color: #718096; }
+        .status-yes { color: #38a169; font-weight: bold; }
+        .status-no { color: #e53e3e; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Email Validation Service</h2>
+    <h2>Email Verification</h2>
+    <p style="color: #a0aec0; margin-bottom: 25px;">Enter an email.</p>
+    
     <form method="POST">
         {% csrf_token %}
-        <input type="email" name="email" placeholder="e.g. name@company.com" required>
+        <input type="email" name="email" placeholder="@example.com" required>
         <button type="submit">Verify</button>
     </form>
 
-    {% if result %}<div class="result">{{ result }}</div>{% endif %}
+    {% if result %}
+        <div class="result-box">{{ result }}</div>
+    {% endif %}
 
     {% if details %}
-        <hr>
-        <h4>Validation Details:</h4>
+        <h4 style="margin-top: 30px; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px;">Security Scan Results:</h4>
         <ul class="details-list">
-            <li><span class="label">Email:</span> <span>{{ details.email }}</span></li>
+            <li><span class="label">Email Address</span> <span>{{ details.email }}</span></li>
             
             <li>
-                <span class="label">Format Valid:</span> 
+                <span class="label">Syntax Check</span> 
                 <span class="{% if details.format_valid %}status-yes{% else %}status-no{% endif %}">
-                    {{ details.format_valid|yesno:"Yes,No" }}
+                    {{ details.format_valid|yesno:"PASS,FAIL" }}
                 </span>
             </li>
 
             <li>
-                <span class="label">MX Record Exists:</span> 
+                <span class="label">MX Mail Server</span> 
                 <span class="{% if details.mx_record_exists %}status-yes{% else %}status-no{% endif %}">
-                    {{ details.mx_record_exists|yesno:"Yes,No" }}
+                    {{ details.mx_record_exists|yesno:"FOUND,MISSING" }}
                 </span>
             </li>
 
             <li>
-                <span class="label">Disposable Email:</span> 
-                <span class="{% if details.disposable_email %}status-no{% else %}status-yes{% endif %}">
-                    {{ details.disposable_email|yesno:"Yes,No" }}
+                <span class="label">Disposable/Temp Provider</span> 
+                <span class="{% if details.disposable %}status-no{% else %}status-yes{% endif %}">
+                    {{ details.disposable|yesno:"DETECTED,CLEAN" }}
                 </span>
             </li>
-
-            <li>
-                <span class="label">Role Based Email:</span> 
-                <span class="{% if details.role_based_email %}status-no{% else %}status-yes{% endif %}">
-                    {{ details.role_based_email|yesno:"Yes,No" }}
-                </span>
-            </li>
-
-            <li><span class="label">Is Common Domain:</span> <span>{{ details.is_common_domain|yesno:"Yes,No" }}</span></li>
-            <li><span class="label">Confidence Score:</span> <span class="score-val">{{ details.confidence_score }}</span></li>
         </ul>
     {% endif %}
 </div>
+
 </body>
 </html>
