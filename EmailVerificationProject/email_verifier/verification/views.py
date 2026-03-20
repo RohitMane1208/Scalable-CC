@@ -17,7 +17,7 @@ def verify_email(request):
     if request.method != "POST":
         return render(request, "verify.html")
 
-    # Unified Email Extraction
+    # Email Extraction
     if request.content_type == 'application/json':
         data = json.loads(request.body) if request.body else {}
         email = data.get("email", "").strip()
@@ -29,7 +29,7 @@ def verify_email(request):
 
     domain = email.split("@")[1].lower()
     
-    # 1. Validation logic (reduced redundancy)
+    #Validation logic
     is_valid_syntax = validate_syntax(email)
     mx_exists = check_mx_record(domain)
     is_disposable = check_disposable(domain)
@@ -38,7 +38,7 @@ def verify_email(request):
     if not is_valid_syntax or is_disposable:
         return JsonResponse({"result": "Email failed authenticity checks."}, status=400)
 
-    # 2. Database & Token generation
+    #Database & Token generation
     obj, _ = EmailVerification.objects.get_or_create(email=email)
     if obj.is_verified:
         return JsonResponse({"result": "Email already verified."})
@@ -46,7 +46,6 @@ def verify_email(request):
     obj.token = uuid.uuid4()
     obj.save()
 
-    # 3. Use your preferred uri method
     link = request.build_absolute_uri(reverse('verify_token', args=[obj.token]))
 
     if send_verification_email(email, link):

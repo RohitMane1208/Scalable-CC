@@ -3,13 +3,10 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY: No hardcode secrets. Using environment variables.
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-7+l_1=shjuah+jim_8&*y^ql=*+c*=xn9*(*fy7oxl9(%)7=ri')
 
-# SECURITY: DEBUG should be False in production environments
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
-# SECURITY: Specify exact hosts to prevent HTTP Host Header attacks
 ALLOWED_HOSTS = [
     '0a818923ed8c452fa05e322d3ef157aa.vfs.cloud9.us-east-1.amazonaws.com',
     'email-verifier-env.eba-jxvqtmpn.us-east-1.elasticbeanstalk.com',
