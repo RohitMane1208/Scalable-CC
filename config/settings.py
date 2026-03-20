@@ -10,22 +10,25 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
+import os
 from pathlib import Path
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
+AWS_VERIFY_URL = "http://email-verifier-env.eba-jxvqtmpn.us-east-1.elasticbeanstalk.com/api/verify/"
+AWS_STATUS_URL = "http://email-verifier-env.eba-jxvqtmpn.us-east-1.elasticbeanstalk.com/api/status/"
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-9202s9eq#)s-4_r+bepc0l%y&wpyy8$8xb=e%06%9jm4@9gq@('
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-9202s9eq#)s-4_r+bepc0l%y&wpyy8$8xb=e%06%9jm4@9gq@(')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = [
+    '93cc690fe36140d4a801628a076d6736.vfs.cloud9.us-east-1.amazonaws.com',
+    'railguard-env.eba-jxvqtmpn.us-east-1.elasticbeanstalk.com',
+    'localhost',
+    '127.0.0.1',
+]
 
 
 # Application definition

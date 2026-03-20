@@ -1,80 +1,73 @@
 {% extends 'base.html' %}
-{% block content %}
+{% block extra_head %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    #dashMap { height: 400px; border-radius: 12px; }
+    .emergency-card { border-radius: 16px; border: none; overflow: hidden; }
+    .btn-emergency { padding: 1.2rem; font-weight: 700; border-radius: 10px; text-align: left; }
+</style>
+{% endblock %}
 
-<div class="row mt-4">
+{% block content %}
+<div class="row g-4">
     <div class="col-lg-8">
-        <div class="card mb-4 shadow-sm border-0">
-            <div class="card-body d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="text-muted mb-1 text-uppercase small fw-bold">Live Journey Track</h6>
-                    <h4 class="mb-0">
-                        {{ route.start_name }} 
-                        <i class="bi bi-arrow-right mx-2 text-success"></i> 
-                        {{ route.end_name }}
+        <div class="card shadow-sm mb-4">
+            <div class="card-body p-4 d-flex flex-wrap justify-content-between align-items-center">
+                <div class="mb-2 mb-md-0">
+                    <span class="text-uppercase small fw-bold text-muted d-block">Live Passenger Track</span>
+                    <h4 class="fw-bold mb-0">
+                        {{ route.start_name }} <i class="bi bi-chevron-right mx-1 text-success small"></i> {{ route.end_name }}
                     </h4>
                 </div>
-                <div class="text-end">
-                    <span class="badge bg-success rounded-pill px-3 py-2">ID Verified</span>
-                    <div class="mt-1 small text-muted">Ticket ID: {{ ticket.id|truncatechars:8 }}</div>
+                <div class="text-md-end">
+                    <span class="badge bg-success py-2 px-3"><i class="bi bi-patch-check me-1"></i> IDENTITY SECURED</span>
+                    <div class="small text-muted mt-1">Ref: {{ ticket.id|stringformat:"s"|slice:":8" }}</div>
                 </div>
             </div>
         </div>
 
-        <div class="card shadow-sm border-0 p-2">
-            <div id="dashMap" style="height: 450px; border-radius: 8px;"></div>
+        <div class="card shadow-sm p-2">
+            <div id="dashMap"></div>
         </div>
     </div>
 
     <div class="col-lg-4">
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-body">
-                <div class="d-flex align-items-center mb-3">
-                    <div class="bg-light p-3 rounded-circle me-3">
-                        <i class="bi bi-person-workspace fs-3 text-primary"></i>
-                    </div>
-                    <div>
-                        <div class="text-muted small">Assigned Carriage</div>
-                        <div class="h4 mb-0 fw-bold">{{ ticket.carriage_no }}</div>
-                    </div>
-                </div>
-                <div class="d-flex align-items-center">
-                    <div class="bg-light p-3 rounded-circle me-3">
-                        <i class="bi bi-clock-history fs-3 text-warning"></i>
-                    </div>
-                    <div>
-                        <div class="text-muted small">Status</div>
-                        <div class="h4 mb-0 fw-bold text-success">Live Tracked</div>
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-lg-12">
+                <div class="card bg-white shadow-sm p-3">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-train-lightrail fs-2 text-success me-3"></i>
+                        <div><small class="text-muted d-block">Carriage</small><strong class="h5">{{ ticket.carriage_no }}</strong></div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="card border-0 shadow-lg bg-dark text-white">
-            <div class="card-header bg-danger text-white fw-bold py-3 border-0">
-                <i class="bi bi-exclamation-triangle-fill me-2"></i> Emergency Assistance
+        <div class="card emergency-card shadow-lg bg-dark text-white">
+            <div class="card-header bg-danger py-3 border-0">
+                <h5 class="mb-0 fw-bold"><i class="bi bi-exclamation-octagon-fill me-2"></i> Emergency Console</h5>
             </div>
-            <div class="card-body">
-                <p class="small opacity-75">Clicking a button below will alert train crew and emergency services with your exact location and identity.</p>
+            <div class="card-body p-4">
+                <p class="small text-white-50 mb-4">Triggering an alert instantly transmits your verified ID and carriage location to Irish Rail Command.</p>
                 
                 <form method="POST">
                     {% csrf_token %}
-                    <div class="d-grid gap-2">
-                        <button type="submit" name="emergency_type" value="medical" class="btn btn-danger btn-lg text-start py-3">
-                            <i class="bi bi-heart-pulse-fill me-2"></i> Medical Emergency
+                    <div class="d-grid gap-3">
+                        <button type="submit" name="emergency_type" value="medical" class="btn btn-danger btn-emergency">
+                            <i class="bi bi-heart-pulse-fill me-3"></i>Medical Help
                         </button>
-                        <button type="submit" name="emergency_type" value="security" class="btn btn-outline-light btn-lg text-start py-3">
-                            <i class="bi bi-shield-lock-fill me-2"></i> Anti-Social Behavior
+                        <button type="submit" name="emergency_type" value="security" class="btn btn-outline-light btn-emergency">
+                            <i class="bi bi-shield-lock-fill me-3"></i>Security / Behavior
                         </button>
-                        <button type="submit" name="emergency_type" value="fire" class="btn btn-outline-light btn-lg text-start py-3">
-                            <i class="bi bi-fire me-2"></i> Fire or Hazard
+                        <button type="submit" name="emergency_type" value="fire" class="btn btn-outline-light btn-emergency">
+                            <i class="bi bi-fire me-3"></i>Hazard / Fire
                         </button>
                     </div>
                 </form>
 
                 {% if alert_sent %}
-                <div class="alert alert-warning mt-3 border-0 shadow-sm animate__animated animate__shakeX">
-                    <i class="bi bi-broadcast me-2"></i> <strong>Alert Sent!</strong> Control center has been notified.
+                <div class="alert alert-warning mt-4 border-0 shadow-sm fw-bold">
+                    <i class="bi bi-broadcast-pin me-2"></i> EMERGENCY SIGNAL ACTIVE
                 </div>
                 {% endif %}
             </div>
@@ -82,29 +75,28 @@
     </div>
 </div>
 
+{{ route|json_script:"route-data-json" }}
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    var dashMap = L.map('dashMap').setView([53.3498, -6.2603], 7);
+    const dashMap = L.map('dashMap').setView([53.3498, -6.2603], 7);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(dashMap);
     L.tileLayer('https://{s}.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png').addTo(dashMap);
-    
-    {% if route %}
-        var trackPoints = {{ route.track|safe }};
-        var line = L.polyline(trackPoints, {color: '#198754', weight: 6, lineJoin: 'round'}).addTo(dashMap);
-        
-        // Start & End Pins
-        L.marker(trackPoints[0]).addTo(dashMap).bindPopup("<b>From:</b> {{ route.start_name }}");
-        L.marker(trackPoints[trackPoints.length - 1]).addTo(dashMap).bindPopup("<b>To:</b> {{ route.end_name }}");
 
-        // Intermediate Station Stops
-        var stops = {{ route.stations|safe }};
-        stops.forEach(function(st) {
+    const route = JSON.parse(document.getElementById('route-data-json').textContent);
+
+    if (route && route.track) {
+        const line = L.polyline(route.track, {color: '#008037', weight: 6}).addTo(dashMap);
+        
+        L.marker(route.track[0]).addTo(dashMap).bindPopup("<b>Departure</b>");
+        L.marker(route.track[route.track.length - 1]).addTo(dashMap).bindPopup("<b>Final Terminus</b>");
+
+        route.stations.forEach(st => {
             L.circleMarker(st.coords, {radius: 6, color: '#000', fillColor: '#ffc107', fillOpacity: 1, weight: 1})
-             .addTo(dashMap)
-             .bindPopup("<b>Upcoming Stop:</b> " + st.name);
+             .addTo(dashMap).bindPopup("<b>Stop:</b> " + st.name);
         });
         
         dashMap.fitBounds(line.getBounds(), {padding: [30, 30]});
-    {% endif %}
+    }
 </script>
 {% endblock %}

@@ -3,27 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RailGuard Ireland</title>
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>RailGuard Ireland | Secure Travel</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <style>
-        body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .bg-irish-green { background-color: #008037 !important; } /* Irish Rail Green */
-        .card { border: none; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        .btn-emergency { height: 60px; font-size: 1.2rem; font-weight: bold; border-radius: 12px; }
+        :root { --irish-rail-green: #008037; --danger-red: #dc3545; }
+        body { background-color: #f8f9fa; font-family: 'Inter', system-ui, sans-serif; }
+        .bg-irish-green { background-color: var(--irish-rail-green) !important; }
+        .card { border: none; border-radius: 12px; transition: transform 0.2s; }
+        .navbar-brand { letter-spacing: 1px; }
+        .status-badge { font-size: 0.75rem; vertical-align: middle; }
     </style>
+    {% block extra_head %}{% endblock %}
 </head>
 <body>
-    <nav class="navbar navbar-dark bg-irish-green shadow-sm">
+    <nav class="navbar navbar-dark bg-irish-green shadow-sm mb-4">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="#"><i class="bi bi-train-front"></i> RailGuard</a>
-            <span class="navbar-text text-white small">Verified User: {{ request.user.email }}</span>
+            <a class="navbar-brand fw-bold d-flex align-items-center" href="/">
+                <i class="bi bi-shield-shaded me-2"></i> RailGuard
+            </a>
+            {% if request.user.is_authenticated %}
+            <span class="navbar-text text-white">
+                <i class="bi bi-person-circle me-1"></i> {{ request.user.email }}
+                <span class="badge bg-light text-success ms-2 status-badge text-uppercase">Verified</span>
+            </span>
+            {% endif %}
         </div>
     </nav>
 
-    <div class="container mt-4">
+    <main class="container">
         {% block content %}{% endblock %}
-    </div>
+    </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>

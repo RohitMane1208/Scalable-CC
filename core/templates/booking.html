@@ -1,58 +1,69 @@
 {% extends 'base.html' %}
-{% block content %}
+{% block extra_head %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    #map { height: 500px; border-radius: 12px; z-index: 1; }
+    .booking-card { border-top: 5px solid #008037; }
+</style>
+{% endblock %}
 
-<div class="row justify-content-center mt-5">
-    <div class="col-md-10 col-lg-9">
-        <div class="card shadow-lg p-4 border-0">
-            <div class="text-center mb-4">
-                <i class="bi bi-shield-check text-success display-4"></i>
-                <h2 class="fw-bold mt-2">Secure Passenger Booking</h2>
-                <p class="text-muted">Identity verification required for Irish Rail Travel</p>
-            </div>
-            
-            <div class="row">
-                <div class="col-md-6 mb-4">
-                    <div id="map" style="height: 450px; border-radius: 12px; border: 2px solid #e9ecef;"></div>
-                    <p class="text-center small text-muted mt-2"><i class="bi bi-info-circle"></i> Map shows actual rail corridor and stops.</p>
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-xl-11">
+        <div class="card shadow-lg p-lg-4 booking-card">
+            <div class="row g-4">
+                <div class="col-lg-7">
+                    <div id="map" class="shadow-sm"></div>
+                    <div class="mt-2 d-flex justify-content-between small text-muted">
+                        <span><i class="bi bi-info-circle"></i> Interactive Rail Corridor Map</span>
+                        <span>v2.1 Secured</span>
+                    </div>
                 </div>
 
-                <div class="col-md-6">
+                <div class="col-lg-5">
+                    <div class="mb-4">
+                        <h3 class="fw-bold">Passenger Identity</h3>
+                        <p class="text-muted small">Verification link will be sent to confirm your seat.</p>
+                    </div>
+
                     {% if messages %}
                         {% for message in messages %}
-                            <div class="alert alert-{{ message.tags }} shadow-sm">{{ message }}</div>
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
                         {% endfor %}
                     {% endif %}
 
-                    <form method="POST" class="mt-2">
+                    <form method="POST">
                         {% csrf_token %}
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Email Address</label>
-                            <input type="email" name="email" id="emailInput" class="form-control form-control-lg" placeholder="yourname@domain.com" required>
+                            <label class="form-label small fw-bold text-uppercase">Email Address</label>
+                            <input type="email" name="email" class="form-control form-control-lg" placeholder="name@domain.ie" required>
                         </div>
                         
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Select Route</label>
-                            <select name="train_id" id="train_id_select" class="form-select form-select-lg" required>
-                                <option value="" selected disabled>Choose your journey...</option>
-                                <option value="DART_102">DART: Dublin to Greystones</option>
-                                <option value="IC_772">InterCity: Dublin to Galway</option>
-                                <option value="IC_884">InterCity: Dublin to Cork</option>
+                            <label class="form-label small fw-bold text-uppercase">Select Journey</label>
+                            <select name="train_id" id="trainSelect" class="form-select form-select-lg" required>
+                                <option value="" selected disabled>Select Route...</option>
+                                <option value="DART_102">DART: Dublin Connolly ⇋ Greystones</option>
+                                <option value="IC_772">InterCity: Dublin Heuston ⇋ Galway</option>
+                                <option value="IC_884">InterCity: Dublin Heuston ⇋ Cork</option>
                             </select>
                         </div>
 
                         <div class="mb-4">
-                            <label class="form-label fw-bold">Assign Carriage</label>
-                            <div class="d-flex gap-2">
+                            <label class="form-label small fw-bold text-uppercase">Carriage Assignment</label>
+                            <div class="btn-group w-100" role="group">
                                 {% for c in "ABCDE" %}
                                 <input type="radio" class="btn-check" name="carriage" id="car{{c}}" value="{{c}}" {% if c == 'A' %}checked{% endif %}>
-                                <label class="btn btn-outline-success flex-fill" for="car{{c}}">{{c}}</label>
+                                <label class="btn btn-outline-success py-2" for="car{{c}}">{{c}}</label>
                                 {% endfor %}
                             </div>
                         </div>
 
-                        <button type="submit" class="btn btn-success btn-lg w-100 fw-bold shadow">
-                            <i class="bi bi-envelope-at me-2"></i>Verify & Book Ticket
+                        <button type="submit" class="btn btn-success btn-lg w-100 fw-bold shadow-sm py-3">
+                            <i class="bi bi-shield-lock me-2"></i>Initiate Security Check
                         </button>
                     </form>
                 </div>
@@ -61,34 +72,33 @@
     </div>
 </div>
 
+{{ station_data|json_script:"station-data-json" }}
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    var map = L.map('map').setView([53.3498, -6.2603], 7);
+    const map = L.map('map').setView([53.3498, -6.2603], 7);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-    L.tileLayer('https://{s}.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png').addTo(map);
+    L.tileLayer('https://{s}.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
-    var stationData = {{ station_data|safe }};
-    var currentLayer = L.layerGroup().addTo(map);
+    const stationData = JSON.parse(document.getElementById('station-data-json').textContent);
+    let currentLayer = L.layerGroup().addTo(map);
 
-    document.getElementById('train_id_select').addEventListener('change', function() {
-        var data = stationData[this.value];
+    document.getElementById('trainSelect').addEventListener('change', function() {
+        const data = stationData[this.value];
         currentLayer.clearLayers();
 
         if(data && data.track) {
-            var line = L.polyline(data.track, {color: '#198754', weight: 6, lineJoin: 'round', opacity: 0.8}).addTo(currentLayer);
+            const line = L.polyline(data.track, {color: '#008037', weight: 5, opacity: 0.9}).addTo(currentLayer);
             
-            // Endpoints
-            L.marker(data.track[0]).addTo(currentLayer).bindPopup("<b>Origin:</b> " + data.start_name).openPopup();
-            L.marker(data.track[data.track.length - 1]).addTo(currentLayer).bindPopup("<b>Destination:</b> " + data.end_name);
+            L.marker(data.track[0]).addTo(currentLayer).bindPopup("<b>Departure:</b> " + data.start_name);
+            L.marker(data.track[data.track.length - 1]).addTo(currentLayer).bindPopup("<b>Terminus:</b> " + data.end_name);
 
-            // Intermediate Stops
-            data.stations.forEach(function(st) {
-                L.circleMarker(st.coords, {radius: 5, color: '#fff', fillColor: '#198754', fillOpacity: 1, weight: 2})
-                 .addTo(currentLayer)
-                 .bindPopup("<b>Station Stop:</b> " + st.name);
+            data.stations.forEach(st => {
+                L.circleMarker(st.coords, {radius: 5, color: '#fff', fillColor: '#008037', fillOpacity: 1, weight: 2})
+                 .addTo(currentLayer).bindPopup("<b>Station:</b> " + st.name);
             });
 
-            map.fitBounds(line.getBounds(), {padding: [40, 40]});
+            map.fitBounds(line.getBounds(), {padding: [50, 50]});
         }
     });
 </script>

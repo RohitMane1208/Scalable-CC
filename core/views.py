@@ -1,4 +1,4 @@
-import uuid
+import logging
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.contrib.auth.models import User
@@ -6,7 +6,9 @@ from django.contrib import messages
 from .services import RailService
 from .models import Ticket
 
-# Full station and track data for Irish Rail routes
+logger = logging.getLogger(__name__)
+
+# Irish Rail Route Configuration
 STATION_DATA = {
     'DART_102': {
         'start_name': 'Dublin Connolly',
@@ -58,70 +60,80 @@ STATION_DATA = {
 }
 
 def booking_page(request):
-    if request.method == "POST":
-        email = request.POST.get("email", "").strip()
-        train_id = request.POST.get("train_id")
-        carriage = request.POST.get("carriage")
+    """Handles passenger registration and identity verification trigger."""
+    if request.method != "POST":
+        return render(request, 'booking.html', {"station_data": STATION_DATA})
 
-        # API Check: Is user already verified?
-        status_check = RailService.get_verification_status(email)
+    email = request.POST.get("email", "").strip().lower()
+    train_id = request.POST.get("train_id")
+    carriage = request.POST.get("carriage")
 
-        if status_check.get("is_verified"):
-            user, _ = User.objects.get_or_create(username=email, email=email)
-            ticket = Ticket.objects.create(
-                passenger=user, train_id=train_id, carriage_no=carriage, is_active=True
-            )
-            request.session['ticket_id'] = ticket.id
-            return redirect('dashboard')
+    # Verify if identity exists in the external API
+    status_check = RailService.get_verification_status(email)
+
+    if status_check.get("is_verified"):
+        # User is already verified: Log them in and create ticket
+        user = User.objects.filter(email=email).first()
+        if not user:
+            user = User.objects.create_user(username=email, email=email)
         
-        else:
-            # API Check: Send verification email
-            api_response = RailService.validate_and_send(email)
-            if api_response.get("status") == "fail":
-                messages.error(request, "Identity verification failed. Please check your email address.")
-            else:
-                messages.info(request, f"Identity check initiated. Please click the link sent to {email}.")
-            
-            return render(request, 'booking.html', {"station_data": STATION_DATA})
-
+        ticket = Ticket.objects.create(
+            passenger=user, 
+            train_id=train_id, 
+            carriage_no=carriage, 
+            is_active=True
+        )
+        request.session['ticket_id'] = ticket.id
+        return redirect('dashboard')
+    
+    # User needs verification: Trigger API email
+    api_response = RailService.validate_and_send(email)
+    if api_response.get("status") == "fail":
+        messages.error(request, "Safety Check Failed: Invalid or disposable email detected.")
+    else:
+        messages.info(request, f"Identity link sent to {email}. Please verify to activate your ticket.")
+    
     return render(request, 'booking.html', {"station_data": STATION_DATA})
 
 def dashboard(request):
+    """Passenger emergency dashboard - Restricted to verified active tickets."""
     ticket_id = request.session.get('ticket_id')
-    active_ticket = Ticket.objects.filter(id=ticket_id).first()
+    active_ticket = Ticket.objects.filter(id=ticket_id, is_active=True).first()
     
     if not active_ticket:
-        messages.warning(request, "Access Denied. Please verify your identity first.")
+        messages.warning(request, "Secure Access Required. Please verify your passenger identity.")
         return redirect('booking')
     
     route_info = STATION_DATA.get(active_ticket.train_id)
-    
-    context = {
-        "ticket": active_ticket,
-        "route": route_info
-    }
+    context = {"ticket": active_ticket, "route": route_info}
     
     if request.method == "POST":
         category = request.POST.get("emergency_type")
-        # Trigger real-time emergency alert via RailService
+        # Direct dispatch to Irish Rail Control via Service Layer
         success = RailService.trigger_emergency(
-            active_ticket.train_id, active_ticket.carriage_no, category
+            active_ticket.train_id, 
+            active_ticket.carriage_no, 
+            category
         )
-        context["alert_sent"] = success
         if success:
-            messages.success(request, f"Emergency {category} alert has been dispatched to Irish Rail Control.")
+            messages.success(request, f"{category} Alert transmitted to Control Center.")
+            context["alert_sent"] = True
+        else:
+            messages.error(request, "Communication Failure. Use the physical alarm if necessary.")
 
     return render(request, 'dashboard.html', context)
 
 def api_check_typo(request):
-    email = request.GET.get('email', '')
-    if email:
-        data = RailService.get_verification_status(email)
-        return JsonResponse({"suggestion": data.get("suggestion")})
-    return JsonResponse({"suggestion": None})
+    """Async endpoint for real-time domain suggestions."""
+    email = request.GET.get('email', '').strip()
+    if not email:
+        return JsonResponse({"suggestion": None})
+        
+    data = RailService.get_verification_status(email)
+    return JsonResponse({"suggestion": data.get("suggestion")})
 
 def verify_ticket_token(request, token):
-    return render(request, 'verification_result.html', {"message": "Identity Confirmed. You can now return to the booking page."})
-
-def trigger_emergency_action(request):
-    return JsonResponse({"status": "received"})
+    """Static landing page after email verification."""
+    return render(request, 'verification_result.html', {
+        "message": "Identity Confirmed. Your RailGuard profile is now active."
+    })
