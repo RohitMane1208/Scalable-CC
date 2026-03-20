@@ -33,7 +33,7 @@ def get_domain_suggestion(domain):
     return matches[0] if matches and matches[0] != domain else None
 
 def send_verification_email(email, verification_link):
-    api_url = "http://cmailapi-env.eba-vg3mwdtr.us-east-1.elasticbeanstalk.com/api/send/"
+    api_url = "https://27zlcvmy53.execute-api.us-east-1.amazonaws.com/Prod/api/send/"
     payload = {
         "to_email": email,
         "subject": "Verify Your Email - Action Required",

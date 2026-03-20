@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-7+l_1=shjuah+jim_8&*y^ql=*+c*=xn9*(*fy7oxl9(%)7=ri
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -123,6 +123,6 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://93cc690fe36140d4a801628a076d6736.vfs.cloud9.us-east-1.amazonaws.com'
-    'http://email-verifier-env.eba-mdagwhcq.us-east-1.elasticbeanstalk.com/'
+    'https://0a818923ed8c452fa05e322d3ef157aa.vfs.cloud9.us-east-1.amazonaws.com',
+    'http://email-verifier-env.eba-jxvqtmpn.us-east-1.elasticbeanstalk.com/',
 ]
