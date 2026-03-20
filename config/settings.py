@@ -16,7 +16,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-AWS_VERIFY_URL = "http://email-verifier-env.eba-jxvqtmpn.us-east-1.elasticbeanstalk.com/api/verify/"
+AWS_VERIFY_URL = "http://email-verifier-env.eba-jxvqtmpn.us-east-1.elasticbeanstalk.com/api/email/"
 AWS_STATUS_URL = "http://email-verifier-env.eba-jxvqtmpn.us-east-1.elasticbeanstalk.com/api/status/"
 
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-9202s9eq#)s-4_r+bepc0l%y&wpyy8$8xb=e%06%9jm4@9gq@(')

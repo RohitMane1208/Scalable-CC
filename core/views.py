@@ -1,11 +1,13 @@
 import logging
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.contrib.auth.models import User
 from django.contrib import messages
+from django.views.decorators.http import require_POST
 from .services import RailService
 from .models import Ticket
 
+# Logger for SonarQube traceability
 logger = logging.getLogger(__name__)
 
 # Irish Rail Route Configuration
@@ -68,11 +70,11 @@ def booking_page(request):
     train_id = request.POST.get("train_id")
     carriage = request.POST.get("carriage")
 
-    # Verify if identity exists in the external API
+    # 1. API Check: Verify if identity is already confirmed
     status_check = RailService.get_verification_status(email)
 
     if status_check.get("is_verified"):
-        # User is already verified: Log them in and create ticket
+        # Success: Fetch/Create user and generate active ticket
         user = User.objects.filter(email=email).first()
         if not user:
             user = User.objects.create_user(username=email, email=email)
@@ -83,10 +85,11 @@ def booking_page(request):
             carriage_no=carriage, 
             is_active=True
         )
-        request.session['ticket_id'] = ticket.id
+        # Store ticket ID in session for dashboard access control
+        request.session['ticket_id'] = str(ticket.id)
         return redirect('dashboard')
     
-    # User needs verification: Trigger API email
+    # 2. Failure/Pending: Trigger the Verification API suite
     api_response = RailService.validate_and_send(email)
     if api_response.get("status") == "fail":
         messages.error(request, "Safety Check Failed: Invalid or disposable email detected.")
@@ -101,7 +104,7 @@ def dashboard(request):
     active_ticket = Ticket.objects.filter(id=ticket_id, is_active=True).first()
     
     if not active_ticket:
-        messages.warning(request, "Secure Access Required. Please verify your passenger identity.")
+        messages.warning(request, "Secure Access Required. Please verify your identity.")
         return redirect('booking')
     
     route_info = STATION_DATA.get(active_ticket.train_id)
@@ -109,19 +112,39 @@ def dashboard(request):
     
     if request.method == "POST":
         category = request.POST.get("emergency_type")
-        # Direct dispatch to Irish Rail Control via Service Layer
+        # Direct dispatch via Service Layer
         success = RailService.trigger_emergency(
             active_ticket.train_id, 
             active_ticket.carriage_no, 
             category
         )
         if success:
-            messages.success(request, f"{category} Alert transmitted to Control Center.")
+            messages.success(request, f" {category.upper()} Alert dispatched to Control Center.")
             context["alert_sent"] = True
         else:
-            messages.error(request, "Communication Failure. Use the physical alarm if necessary.")
+            messages.error(request, "Communication Failure. Use physical alarm if necessary.")
 
     return render(request, 'dashboard.html', context)
+
+@require_POST
+def cancel_ticket(request, ticket_id):
+    """
+    Securely ends a journey. 
+    Matches session ID against ticket ID to prevent unauthorized cancellations.
+    """
+    session_ticket_id = request.session.get('ticket_id')
+    
+    # Security Check: Ensure the person cancelling owns the ticket in this session
+    if str(ticket_id) == session_ticket_id:
+        ticket = Ticket.objects.filter(id=ticket_id, is_active=True).first()
+        if ticket:
+            ticket.is_active = False
+            ticket.save()
+            messages.success(request, "Journey ended. Your safety link has been deactivated.")
+    
+    # Flush session to prevent any further access to dashboard
+    request.session.flush()
+    return redirect('booking')
 
 def api_check_typo(request):
     """Async endpoint for real-time domain suggestions."""
