@@ -16,15 +16,17 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-AWS_VERIFY_URL = "http://email-verifier-env.eba-jxvqtmpn.us-east-1.elasticbeanstalk.com/api/email/"
-AWS_STATUS_URL = "http://email-verifier-env.eba-jxvqtmpn.us-east-1.elasticbeanstalk.com/api/status/"
+AWS_VERIFY_URL = "https://gkudcyuzrc.execute-api.us-east-1.amazonaws.com/prod/email"
+AWS_STATUS_URL = "https://gkudcyuzrc.execute-api.us-east-1.amazonaws.com/prod/status"
+
+AWS_API_KEY = "e3XIRF3O5TashYGZM5L6v5dMWzN5I8qYNeIiB8J5"
 
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-9202s9eq#)s-4_r+bepc0l%y&wpyy8$8xb=e%06%9jm4@9gq@(')
 
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = [
-    '93cc690fe36140d4a801628a076d6736.vfs.cloud9.us-east-1.amazonaws.com',
+    '0a818923ed8c452fa05e322d3ef157aa.vfs.cloud9.us-east-1.amazonaws.com',
     'railguard-env.eba-jxvqtmpn.us-east-1.elasticbeanstalk.com',
     'localhost',
     '127.0.0.1',
@@ -127,5 +129,6 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://93cc690fe36140d4a801628a076d6736.vfs.cloud9.us-east-1.amazonaws.com'
+    'https://93cc690fe36140d4a801628a076d6736.vfs.cloud9.us-east-1.amazonaws.com',
+    'https://0a818923ed8c452fa05e322d3ef157aa.vfs.cloud9.us-east-1.amazonaws.com'
 ]
