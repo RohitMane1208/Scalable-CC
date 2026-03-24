@@ -3,7 +3,7 @@ name: RailGuard CI/CD Pipeline
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
   # 1) SONARCLOUD ANALYSIS
