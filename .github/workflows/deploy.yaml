@@ -49,7 +49,7 @@ jobs:
           aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws_session_token: ${{ secrets.AWS_SESSION_TOKEN }} # Required for Vocareum/AWS Learner Lab
-          application_name: config # From your EB dashboard
+          application_name: Application # From your EB dashboard
           environment_name: Application-env # From your error message
           version_label: railguard-${{ github.run_number }}
           region: us-east-1
