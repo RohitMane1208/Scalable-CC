@@ -2,11 +2,25 @@
 {% block extra_head %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
-    #dashMap { height: 420px; border-radius: 12px; z-index: 1; }
-    .emergency-card { border-radius: 16px; border: none; overflow: hidden; }
-    .btn-emergency { padding: 1.2rem; font-weight: 700; border-radius: 10px; text-align: left; transition: all 0.2s; }
-    .btn-emergency:hover { transform: translateX(5px); }
+    #dashMap { height: 450px; border-radius: 12px; z-index: 1; border: 2px solid #eee; }
     .ticket-badge { font-size: 0.8rem; letter-spacing: 1px; }
+
+    /* Classification & Sidebar Styling */
+    .service-list { max-height: 600px; overflow-y: auto; scrollbar-width: thin; padding-right: 5px; }
+    .category-header { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #6c757d; margin-top: 1.5rem; margin-bottom: 0.75rem; display: flex; align-items: center; }
+    .category-header i { margin-right: 8px; font-size: 1rem; }
+    
+    .service-item { transition: all 0.2s; border-radius: 12px !important; margin-bottom: 10px; cursor: pointer; border: 1px solid #edf2f7; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+    .service-item:hover { background: #f8fafc; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    
+    /* Category-Specific Borders */
+    .border-police { border-left: 5px solid #0056b3 !important; }
+    .border-fire { border-left: 5px solid #e03131 !important; }
+    .border-hospital { border-left: 5px solid #2f9e44 !important; }
+    .border-pharmacy { border-left: 5px solid #f08c00 !important; }
+    
+    .contact-number { font-size: 0.85rem; font-weight: 700; color: #dc3545; }
+    .website-link { font-size: 0.75rem; text-decoration: none; font-weight: 600; }
 </style>
 {% endblock %}
 
@@ -16,14 +30,14 @@
         <div class="card shadow-sm mb-4 border-0">
             <div class="card-body p-4 d-flex flex-wrap justify-content-between align-items-center">
                 <div class="mb-2 mb-md-0">
-                    <span class="text-uppercase small fw-bold text-muted d-block">Live Journey Track</span>
+                    <span class="text-uppercase small fw-bold text-muted d-block">Live Journey Track ({{ city }})</span>
                     <h4 class="fw-bold mb-0">
-                        {{ route.start_name }} <i class="bi bi-chevron-right mx-1 text-success small"></i> {{ route.end_name }}
+                        {{ route.start_name }} <i class="bi bi-arrow-right mx-1 text-success small"></i> {{ route.end_name }}
                     </h4>
                 </div>
                 <div class="text-md-end">
-                    <span class="badge bg-success py-2 px-3 ticket-badge"><i class="bi bi-patch-check-fill me-1"></i> IDENTITY VERIFIED</span>
-                    <div class="small text-muted mt-1 fw-bold">Ticket ID: {{ ticket.id|stringformat:"s"|slice:":8"|upper }}</div>
+                    <span class="badge bg-success py-2 px-3 ticket-badge mb-1"><i class="bi bi-patch-check-fill me-1"></i> IDENTITY VERIFIED</span>
+                    <div class="small text-muted fw-bold">Ticket ID: {{ ticket.id|stringformat:"s"|slice:":8"|upper }}</div>
                 </div>
             </div>
         </div>
@@ -34,21 +48,40 @@
     </div>
 
     <div class="col-lg-4">
-        
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-body p-4">
-                <div class="d-flex align-items-center mb-3">
-                    <div class="bg-light p-3 rounded-circle me-3">
-                        <i class="bi bi-train-front fs-3 text-success"></i>
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white border-0 pt-4 pb-0">
+                <h5 class="fw-bold"><i class="bi bi-telephone-outbound me-2 text-danger"></i>Emergency Support</h5>
+                <p class="small text-muted">Verified facilities in <strong>{{ city }}</strong></p>
+            </div>
+            <div class="card-body pt-0">
+                <div class="service-list px-1" id="classified-services">
+                    <div id="section-police" class="d-none">
+                        <div class="category-header text-primary"><i class="bi bi-shield-shaded"></i> Police Stations</div>
+                        <div class="items"></div>
                     </div>
-                    <div>
-                        <small class="text-muted d-block text-uppercase fw-bold" style="font-size: 0.7rem;">Assigned Carriage</small>
-                        <span class="h4 mb-0 fw-bold">Carriage {{ ticket.carriage_no }}</span>
+                    <div id="section-fire" class="d-none">
+                        <div class="category-header text-danger"><i class="bi bi-fire"></i> Fire Stations</div>
+                        <div class="items"></div>
+                    </div>
+                    <div id="section-hospital" class="d-none">
+                        <div class="category-header text-success"><i class="bi bi-hospital"></i> Hospitals</div>
+                        <div class="items"></div>
+                    </div>
+                    <div id="section-pharmacy" class="d-none">
+                        <div class="category-header text-warning"><i class="bi bi-capsule"></i> Pharmacies</div>
+                        <div class="items"></div>
+                    </div>
+
+                    <div id="no-services" class="text-center py-5 text-muted d-none">
+                        <p class="small">Searching for nearby services...</p>
                     </div>
                 </div>
-                
-                <hr class="my-3 opacity-10">
+            </div>
+        </div>
 
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4 text-center">
+                <p class="small text-muted mb-3">Traveling in Carriage <strong>{{ ticket.carriage_no }}</strong></p>
                 <form action="{% url 'cancel_ticket' ticket.id %}" method="POST">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-outline-secondary btn-sm w-100 py-2 rounded-pill">
@@ -57,86 +90,98 @@
                 </form>
             </div>
         </div>
-
-        <div class="card emergency-card shadow-lg bg-dark text-white border-0">
-            <div class="card-header bg-danger py-3 border-0">
-                <h5 class="mb-0 fw-bold"><i class="bi bi-exclamation-octagon-fill me-2"></i> Emergency Console</h5>
-            </div>
-            <div class="card-body p-4">
-                <p class="small text-white-50 mb-4">Triggering an alert instantly transmits your verified ID and carriage location to Irish Rail Command.</p>
-                
-                <form method="POST">
-                    {% csrf_token %}
-                    <div class="d-grid gap-3">
-                        <button type="submit" name="emergency_type" value="medical" class="btn btn-danger btn-emergency shadow-sm">
-                            <i class="bi bi-heart-pulse-fill me-3"></i>Medical Help
-                        </button>
-                        <button type="submit" name="emergency_type" value="security" class="btn btn-outline-light btn-emergency shadow-sm">
-                            <i class="bi bi-shield-lock-fill me-3"></i>Security / Behavior
-                        </button>
-                        <button type="submit" name="emergency_type" value="fire" class="btn btn-outline-light btn-emergency shadow-sm">
-                            <i class="bi bi-fire me-3"></i>Hazard / Fire
-                        </button>
-                    </div>
-                </form>
-
-                {% if alert_sent %}
-                <div class="alert alert-warning mt-4 border-0 shadow-sm fw-bold animate__animated animate__pulse animate__infinite">
-                    <i class="bi bi-broadcast-pin me-2"></i> EMERGENCY SIGNAL ACTIVE
-                </div>
-                {% endif %}
-            </div>
-        </div>
-
-        <p class="text-center mt-3 small text-muted">
-            <i class="bi bi-shield-lock"></i> Secured by RailGuard Identity Protocol
-        </p>
     </div>
 </div>
 
 {{ route|json_script:"route-data-json" }}
+{{ emergency_services|json_script:"emergency-services-json" }}
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    const dashMap = L.map('dashMap').setView([53.3498, -6.2603], 7);
+    const isMumbai = "{{ city }}" === "Mumbai";
+    const dashMap = L.map('dashMap').setView(isMumbai ? [19.0760, 72.8777] : [53.3498, -6.2603], 12);
     
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap'
-    }).addTo(dashMap);
-    
-    L.tileLayer('https://{s}.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenRailwayMap',
-        maxZoom: 19
-    }).addTo(dashMap);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OSM' }).addTo(dashMap);
+    L.tileLayer('https://{s}.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png', { attribution: '&copy; ORM' }).addTo(dashMap);
 
-    const route = JSON.parse(document.getElementById('route-data-json').textContent);
+    const routeData = JSON.parse(document.getElementById('route-data-json').textContent);
+    const services = JSON.parse(document.getElementById('emergency-services-json').textContent);
 
-    if (route && route.track) {
-        // Draw the rail path
-        const line = L.polyline(route.track, {
-            color: '#008037', 
-            weight: 6, 
-            opacity: 0.8,
-            lineJoin: 'round'
-        }).addTo(dashMap);
-        
-        // Start & End Markers
-        L.marker(route.track[0]).addTo(dashMap).bindPopup("<b>Departure:</b> " + route.start_name);
-        L.marker(route.track[route.track.length - 1]).addTo(dashMap).bindPopup("<b>Terminus:</b> " + route.end_name);
+    // 1. Setup Classification Categories
+    const categories = {
+        'Police Station': { id: 'section-police', border: 'border-police', color: '#0056b3' },
+        'Fire Station': { id: 'section-fire', border: 'border-fire', color: '#e03131' },
+        'Hospital': { id: 'section-hospital', border: 'border-hospital', color: '#2f9e44' },
+        'Pharmacy': { id: 'section-pharmacy', border: 'border-pharmacy', color: '#f08c00' }
+    };
 
-        // Map station stops
-        route.stations.forEach(st => {
-            L.circleMarker(st.coords, {
-                radius: 6, 
-                color: '#212529', 
-                fillColor: '#ffc107', 
-                fillOpacity: 1, 
-                weight: 2
-            }).addTo(dashMap).bindPopup("<b>Station Stop:</b> " + st.name);
+    // 2. Process and Render Services
+    if (!services || services.length === 0) {
+        document.getElementById('no-services').classList.remove('d-none');
+    } else {
+        services.forEach(svc => {
+            const type = svc.service_type.name;
+            const config = categories[type] || { id: null, color: '#6c757d', border: '' };
+            const meta = svc.metadata || {};
+            const getVal = (keys) => {
+                for (let k in meta) if (keys.some(p => k.includes(p))) return meta[k];
+                return null;
+            };
+
+            const site = getVal(['website']);
+            const phone = svc.phone || getVal(['phone']) || 'N/A';
+
+            if (config.id) {
+                const sectionEl = document.getElementById(config.id);
+                sectionEl.classList.remove('d-none');
+                
+                const itemHtml = `
+                    <div class="service-item p-3 bg-white ${config.border}" onclick="focusService(${svc.latitude}, ${svc.longitude}, '${svc.name.replace(/'/g, "\\'")}')">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <h6 class="mb-1 fw-bold small flex-grow-1">${svc.name}</h6>
+                            ${site ? `<a href="${site}" target="_blank" class="website-link" onclick="event.stopPropagation();"><i class="bi bi-box-arrow-up-right"></i></a>` : ''}
+                        </div>
+                        <div class="small text-muted mb-2" style="font-size: 0.7rem;"><i class="bi bi-geo-alt"></i> ${svc.address}</div>
+                        <div class="contact-number mt-2"><i class="bi bi-telephone-fill me-1"></i> ${phone}</div>
+                    </div>
+                `;
+                sectionEl.querySelector('.items').insertAdjacentHTML('beforeend', itemHtml);
+            }
+
+            L.marker([svc.latitude, svc.longitude], {
+                icon: L.divIcon({
+                    className: 'custom-marker',
+                    html: `<div style="background-color:${config.color}; width:12px; height:12px; border-radius:50%; border:2px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.3);"></div>`,
+                    iconSize: [12, 12]
+                })
+            }).addTo(dashMap).bindPopup(`<b>${svc.name}</b><br>${type}<br><b>Tel:</b> ${phone}`);
         });
+    }
+
+    // 3. Render Journey Track and Stations
+    if (routeData && routeData.track) {
+        const routeColor = isMumbai ? '#ff4500' : '#008037';
+        const line = L.polyline(routeData.track, { color: routeColor, weight: 6, opacity: 0.8 }).addTo(dashMap);
         
-        // Auto-zoom to fit the journey
-        dashMap.fitBounds(line.getBounds(), {padding: [40, 40]});
+        // Render All Intermediate Stations (from booking page logic)
+        if(routeData.stations) {
+            routeData.stations.forEach(st => {
+                L.circleMarker(st.coords, { 
+                    radius: 6, 
+                    color: '#212529', 
+                    fillColor: '#ffc107', 
+                    fillOpacity: 1,
+                    weight: 2
+                }).addTo(dashMap).bindPopup(`<b>Station:</b> ${st.name}`);
+            });
+        }
+
+        dashMap.fitBounds(line.getBounds(), {padding: [50, 50]});
+    }
+
+    function focusService(lat, lon, name) {
+        dashMap.setView([lat, lon], 16);
+        L.popup().setLatLng([lat, lon]).setContent(`<strong>${name}</strong>`).openOn(dashMap);
     }
 </script>
 {% endblock %}

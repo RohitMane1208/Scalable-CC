@@ -21,6 +21,8 @@ AWS_STATUS_URL = "https://gkudcyuzrc.execute-api.us-east-1.amazonaws.com/prod/st
 
 AWS_API_KEY = "e3XIRF3O5TashYGZM5L6v5dMWzN5I8qYNeIiB8J5"
 
+EMERGENCY_SERVICE_URL = "https://api.anuragktech.me/api/services/"
+
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-9202s9eq#)s-4_r+bepc0l%y&wpyy8$8xb=e%06%9jm4@9gq@(')
 
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'

@@ -4,6 +4,8 @@
 <style>
     #map { height: 500px; border-radius: 12px; z-index: 1; }
     .booking-card { border-top: 5px solid #008037; }
+    .route-mumbai { border-left: 4px solid #ff4500; }
+    .route-dublin { border-left: 4px solid #008037; }
 </style>
 {% endblock %}
 
@@ -15,15 +17,15 @@
                 <div class="col-lg-7">
                     <div id="map" class="shadow-sm"></div>
                     <div class="mt-2 d-flex justify-content-between small text-muted">
-                        <span><i class="bi bi-info-circle"></i> Interactive Rail Corridor Map</span>
-                        <span>v2.1 Secured</span>
+                        <span><i class="bi bi-info-circle"></i> Interactive RailGuard Corridor</span>
+                        <span id="map-version">Global Secured v2.5</span>
                     </div>
                 </div>
 
                 <div class="col-lg-5">
                     <div class="mb-4">
                         <h3 class="fw-bold">Passenger Identity</h3>
-                        <p class="text-muted small">Verification link will be sent to confirm your seat.</p>
+                        <p class="text-muted small">Verification link will be sent to confirm your seat for travel in <span id="city-label" class="fw-bold text-dark">Dublin/Mumbai</span>.</p>
                     </div>
 
                     {% if messages %}
@@ -39,16 +41,22 @@
                         {% csrf_token %}
                         <div class="mb-3">
                             <label class="form-label small fw-bold text-uppercase">Email Address</label>
-                            <input type="email" name="email" class="form-control form-control-lg" placeholder="name@domain.ie" required>
+                            <input type="email" name="email" class="form-control form-control-lg" placeholder="yourname@email.com" required>
                         </div>
                         
                         <div class="mb-3">
-                            <label class="form-label small fw-bold text-uppercase">Select Journey</label>
+                            <label class="form-label small fw-bold text-uppercase">Select Route</label>
                             <select name="train_id" id="trainSelect" class="form-select form-select-lg" required>
                                 <option value="" selected disabled>Select Route...</option>
-                                <option value="DART_102">DART: Dublin Connolly ⇋ Greystones</option>
-                                <option value="IC_772">InterCity: Dublin Heuston ⇋ Galway</option>
-                                <option value="IC_884">InterCity: Dublin Heuston ⇋ Cork</option>
+                                <optgroup label="Dublin DART">
+                                    <option value="DART_HOWTH">DART: Dublin Connolly ⇋ Howth</option>
+                                    <option value="DART_MALAHIDE">DART: Dublin Connolly ⇋ Malahide</option>
+                                    <option value="DART_SOUTH">DART: Dublin Connolly ⇋ Bray / Greystones</option>
+                                </optgroup>
+                                <optgroup label="Mumbai Local">
+                                    <option value="MUMBAI_WESTERN">Western: Churchgate ⇋ Virar</option>
+                                    <option value="MUMBAI_CENTRAL">Central: CSMT ⇋ Kalyan</option>
+                                </optgroup>
                             </select>
                         </div>
 
@@ -76,30 +84,62 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    const map = L.map('map').setView([53.3498, -6.2603], 7);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-    L.tileLayer('https://{s}.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+    // Initial global map focus
+    const map = L.map('map').setView([20.0, 0.0], 2);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+    
+    L.tileLayer('https://{s}.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png', { 
+        maxZoom: 19,
+        attribution: '&copy; OpenRailwayMap' 
+    }).addTo(map);
 
     const stationData = JSON.parse(document.getElementById('station-data-json').textContent);
     let currentLayer = L.layerGroup().addTo(map);
 
     document.getElementById('trainSelect').addEventListener('change', function() {
-        const data = stationData[this.value];
+        const routeKey = this.value;
+        const data = stationData[routeKey];
+        const cityLabel = document.getElementById('city-label');
         currentLayer.clearLayers();
 
         if(data && data.track) {
-            const line = L.polyline(data.track, {color: '#008037', weight: 5, opacity: 0.9}).addTo(currentLayer);
+            // Update UI based on city
+            const isMumbai = routeKey.includes('MUMBAI');
+            const routeColor = isMumbai ? '#ff4500' : '#008037'; // Orange for Mumbai, Green for Dublin
+            cityLabel.innerText = data.city || (isMumbai ? 'Mumbai' : 'Dublin');
             
+            const line = L.polyline(data.track, {
+                color: routeColor, 
+                weight: 5, 
+                opacity: 0.9
+            }).addTo(currentLayer);
+            
+            // Markers
             L.marker(data.track[0]).addTo(currentLayer).bindPopup("<b>Departure:</b> " + data.start_name);
             L.marker(data.track[data.track.length - 1]).addTo(currentLayer).bindPopup("<b>Terminus:</b> " + data.end_name);
 
-            data.stations.forEach(st => {
-                L.circleMarker(st.coords, {radius: 5, color: '#fff', fillColor: '#008037', fillOpacity: 1, weight: 2})
-                 .addTo(currentLayer).bindPopup("<b>Station:</b> " + st.name);
-            });
+            // Intermediate Stations
+            if (data.stations) {
+                data.stations.forEach(st => {
+                    L.circleMarker(st.coords, {
+                        radius: 5, 
+                        color: '#fff', 
+                        fillColor: routeColor, 
+                        fillOpacity: 1, 
+                        weight: 2
+                    }).addTo(currentLayer).bindPopup("<b>Station:</b> " + st.name);
+                });
+            }
 
+            // Smooth zoom to the selected route
             map.fitBounds(line.getBounds(), {padding: [50, 50]});
         }
     });
+
+    // Default to Dublin view if nothing selected
+    map.setView([53.3498, -6.2603], 10);
 </script>
 {% endblock %}

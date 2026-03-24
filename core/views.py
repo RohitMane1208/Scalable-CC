@@ -10,11 +10,43 @@ from .models import Ticket
 # Logger for SonarQube traceability
 logger = logging.getLogger(__name__)
 
-# Irish Rail Route Configuration
+# Combined Rail Configuration: Dublin DART & Mumbai Local
 STATION_DATA = {
-    'DART_102': {
+    # --- DUBLIN DART ROUTES ---
+    'DART_HOWTH': {
+        'city': 'Dublin',
         'start_name': 'Dublin Connolly',
-        'end_name': 'Greystones',
+        'end_name': 'Howth',
+        'stations': [
+            {'name': 'Clontarf Road', 'coords': [53.3632, -6.2178]},
+            {'name': 'Killester', 'coords': [53.3725, -6.2045]},
+            {'name': 'Raheny', 'coords': [53.3813, -6.1764]},
+            {'name': 'Sutton', 'coords': [53.3892, -6.1082]},
+        ],
+        'track': [
+            [53.3533, -6.2491], [53.3632, -6.2178], [53.3725, -6.2045], 
+            [53.3813, -6.1764], [53.3931, -6.1555], [53.3892, -6.1082], [53.3885, -6.0746]
+        ]
+    },
+    'DART_MALAHIDE': {
+        'city': 'Dublin',
+        'start_name': 'Dublin Connolly',
+        'end_name': 'Malahide',
+        'stations': [
+            {'name': 'Harmonstown', 'coords': [53.3789, -6.1895]},
+            {'name': 'Kilbarrack', 'coords': [53.3912, -6.1661]},
+            {'name': 'Howth Junction', 'coords': [53.3963, -6.1555]},
+            {'name': 'Clongriffin', 'coords': [53.4035, -6.1481]},
+        ],
+        'track': [
+            [53.3533, -6.2491], [53.3725, -6.2045], [53.3789, -6.1895], 
+            [53.3912, -6.1661], [53.3963, -6.1555], [53.4035, -6.1481], [53.4503, -6.1539]
+        ]
+    },
+    'DART_SOUTH': {
+        'city': 'Dublin',
+        'start_name': 'Dublin Connolly',
+        'end_name': 'Bray / Greystones',
         'stations': [
             {'name': 'Tara Street', 'coords': [53.3470, -6.2542]},
             {'name': 'Dublin Pearse', 'coords': [53.3433, -6.2491]},
@@ -28,35 +60,37 @@ STATION_DATA = {
             [53.2205, -6.1075], [53.2044, -6.1052], [53.1444, -6.0644]
         ]
     },
-    'IC_772': {
-        'start_name': 'Dublin Heuston',
-        'end_name': 'Galway Ceannt',
+    # --- MUMBAI LOCAL ROUTES ---
+    'MUMBAI_WESTERN': {
+        'city': 'Mumbai',
+        'start_name': 'Churchgate',
+        'end_name': 'Virar',
         'stations': [
-            {'name': 'Tullamore', 'coords': [53.2750, -7.4942]},
-            {'name': 'Athlone', 'coords': [53.4251, -7.9351]},
-            {'name': 'Ballinasloe', 'coords': [53.3283, -8.2215]},
-            {'name': 'Athenry', 'coords': [53.2989, -8.7441]},
+            {'name': 'Mumbai Central', 'coords': [18.9696, 72.8193]},
+            {'name': 'Dadar', 'coords': [19.0178, 72.8436]},
+            {'name': 'Bandra', 'coords': [19.0544, 72.8406]},
+            {'name': 'Andheri', 'coords': [19.1197, 72.8464]},
+            {'name': 'Borivali', 'coords': [19.2290, 72.8574]},
         ],
         'track': [
-            [53.3464, -6.2945], [53.3364, -6.6133], [53.3102, -7.0655], 
-            [53.2750, -7.4942], [53.4241, -7.9333], [53.3281, -8.2215], 
-            [53.2989, -8.7441], [53.2743, -9.0477]
+            [18.9322, 72.8264], [18.9696, 72.8193], [19.0178, 72.8436], 
+            [19.0544, 72.8406], [19.1197, 72.8464], [19.2290, 72.8574], [19.4544, 72.8111]
         ]
     },
-    'IC_884': {
-        'start_name': 'Dublin Heuston',
-        'end_name': 'Cork Kent',
+    'MUMBAI_CENTRAL': {
+        'city': 'Mumbai',
+        'start_name': 'CSMT',
+        'end_name': 'Kalyan',
         'stations': [
-            {'name': 'Kildare', 'coords': [53.1581, -6.9115]},
-            {'name': 'Portlaoise', 'coords': [53.0345, -7.2991]},
-            {'name': 'Thurles', 'coords': [52.6801, -7.8188]},
-            {'name': 'Limerick Junction', 'coords': [52.5015, -8.2721]},
-            {'name': 'Mallow', 'coords': [52.1391, -8.6545]},
+            {'name': 'Byculla', 'coords': [18.9775, 72.8336]},
+            {'name': 'Dadar', 'coords': [19.0178, 72.8436]},
+            {'name': 'Kurla', 'coords': [19.0652, 72.8793]},
+            {'name': 'Ghatkopar', 'coords': [19.0860, 72.9082]},
+            {'name': 'Thane', 'coords': [19.1860, 72.9759]},
         ],
         'track': [
-            [53.3464, -6.2945], [53.2428, -6.6578], [53.1581, -6.9115], 
-            [53.0345, -7.2991], [52.6801, -7.8188], [52.5015, -8.2721], 
-            [52.1391, -8.6545], [51.9018, -8.4681]
+            [18.9400, 72.8353], [18.9775, 72.8336], [19.0178, 72.8436], 
+            [19.0652, 72.8793], [19.0860, 72.9082], [19.1860, 72.9759], [19.2348, 73.1298]
         ]
     },
 }
@@ -70,11 +104,9 @@ def booking_page(request):
     train_id = request.POST.get("train_id")
     carriage = request.POST.get("carriage")
 
-    # 1. API Check: Verify if identity is already confirmed
     status_check = RailService.get_verification_status(email)
 
     if status_check.get("is_verified"):
-        # Success: Fetch/Create user and generate active ticket
         user = User.objects.filter(email=email).first()
         if not user:
             user = User.objects.create_user(username=email, email=email)
@@ -85,11 +117,9 @@ def booking_page(request):
             carriage_no=carriage, 
             is_active=True
         )
-        # Store ticket ID in session for dashboard access control
         request.session['ticket_id'] = str(ticket.id)
         return redirect('dashboard')
     
-    # 2. Failure/Pending: Trigger the Verification API suite
     api_response = RailService.validate_and_send(email)
     if api_response.get("status") == "fail":
         messages.error(request, "Safety Check Failed: Invalid or disposable email detected.")
@@ -99,7 +129,7 @@ def booking_page(request):
     return render(request, 'booking.html', {"station_data": STATION_DATA})
 
 def dashboard(request):
-    """Passenger emergency dashboard - Restricted to verified active tickets."""
+    """Passenger emergency dashboard - Supports Dublin & Mumbai contexts."""
     ticket_id = request.session.get('ticket_id')
     active_ticket = Ticket.objects.filter(id=ticket_id, is_active=True).first()
     
@@ -107,34 +137,32 @@ def dashboard(request):
         messages.warning(request, "Secure Access Required. Please verify your identity.")
         return redirect('booking')
     
+    # Get route info and determine the correct city for the API
     route_info = STATION_DATA.get(active_ticket.train_id)
-    context = {"ticket": active_ticket, "route": route_info}
+    city_context = route_info.get('city', 'Dublin') if route_info else 'Dublin'
+
+    # Fetch city-specific emergency services (Dublin or Mumbai)
+    nearby_services = RailService.trigger_emergency(city=city_context)
+
+    context = {
+        "ticket": active_ticket, 
+        "route": route_info,
+        "emergency_services": nearby_services,
+        "city": city_context,
+        "alert_sent": False
+    }
     
     if request.method == "POST":
         category = request.POST.get("emergency_type")
-        # Direct dispatch via Service Layer
-        success = RailService.trigger_emergency(
-            active_ticket.train_id, 
-            active_ticket.carriage_no, 
-            category
-        )
-        if success:
-            messages.success(request, f" {category.upper()} Alert dispatched to Control Center.")
-            context["alert_sent"] = True
-        else:
-            messages.error(request, "Communication Failure. Use physical alarm if necessary.")
+        RailService.trigger_emergency(city=city_context) 
+        messages.success(request, f"{category.upper()} Alert dispatched to Control Center in {city_context}.")
+        context["alert_sent"] = True
 
     return render(request, 'dashboard.html', context)
 
 @require_POST
 def cancel_ticket(request, ticket_id):
-    """
-    Securely ends a journey. 
-    Matches session ID against ticket ID to prevent unauthorized cancellations.
-    """
     session_ticket_id = request.session.get('ticket_id')
-    
-    # Security Check: Ensure the person cancelling owns the ticket in this session
     if str(ticket_id) == session_ticket_id:
         ticket = Ticket.objects.filter(id=ticket_id, is_active=True).first()
         if ticket:
@@ -142,12 +170,10 @@ def cancel_ticket(request, ticket_id):
             ticket.save()
             messages.success(request, "Journey ended. Your safety link has been deactivated.")
     
-    # Flush session to prevent any further access to dashboard
     request.session.flush()
     return redirect('booking')
 
 def api_check_typo(request):
-    """Async endpoint for real-time domain suggestions."""
     email = request.GET.get('email', '').strip()
     if not email:
         return JsonResponse({"suggestion": None})
@@ -156,7 +182,6 @@ def api_check_typo(request):
     return JsonResponse({"suggestion": data.get("suggestion")})
 
 def verify_ticket_token(request, token):
-    """Static landing page after email verification."""
     return render(request, 'verification_result.html', {
         "message": "Identity Confirmed. Your RailGuard profile is now active."
     })
