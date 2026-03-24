@@ -32,7 +32,7 @@ ALLOWED_HOSTS = [
     'railguard-env.eba-jxvqtmpn.us-east-1.elasticbeanstalk.com',
     'localhost',
     '127.0.0.1',
-    'http://application-env.eba-22zkppyu.us-east-1.elasticbeanstalk.com/'
+    'http://application-env.eba-22zkppyu.us-east-1.elasticbeanstalk.com/',
 ]
 
 
@@ -133,5 +133,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CSRF_TRUSTED_ORIGINS = [
     'https://93cc690fe36140d4a801628a076d6736.vfs.cloud9.us-east-1.amazonaws.com',
-    'https://0a818923ed8c452fa05e322d3ef157aa.vfs.cloud9.us-east-1.amazonaws.com'
+    'https://0a818923ed8c452fa05e322d3ef157aa.vfs.cloud9.us-east-1.amazonaws.com',
+    'http://application-env.eba-22zkppyu.us-east-1.elasticbeanstalk.com/'
 ]
