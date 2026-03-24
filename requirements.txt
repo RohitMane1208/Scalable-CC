@@ -1,37 +1,37 @@
-# Core Framework
+# --- Framework & API ---
 Django==4.2
 djangorestframework==3.16.1
-django-cors-headers==4.9.0
 django-environ==0.13.0
 sqlparse==0.5.5
 
-# Real-time Capabilities (WebSockets & Channels)
+# --- Real-time & WebSockets (Channels) ---
 channels==4.3.2
 channels_redis==4.3.0
 daphne==4.2.1
 asgiref==3.11.1
-attrs==23.1.0
+attrs==25.4.0
 autobahn==24.4.2
+msgpack==1.1.2
+Twisted==25.5.0
+zope.interface==8.0.1
 
-# AWS SDK & IoT (Satisfies the SDK runtime)
+# --- AWS SDK & Deployment Tools (Proven Reference) ---
+awsebcli==3.26
+boto3==1.42.60
+botocore==1.42.60
+# Keep 0.31.2 for the IoT/EB features; ignore the awscli warning
 awscrt==0.31.2
 awsiotsdk==1.28.1
-boto3==1.34.60
-botocore==1.34.60
+s3transfer==0.16.0
+# 1.0.1 satisfies both the app and the awscli 
 jmespath==1.0.1
-s3transfer==0.10.1
-awsebcli
 
-# Web Server for Deployment
-gunicorn==21.2.0
-
-# Database & Cache Drivers
-redis==5.0.1
-
-# Utilities
-PyYAML<5.4
+# --- Core Dependencies & Utilities ---
+PyYAML==6.0.3
 requests==2.32.5
 python-dateutil==2.9.0
-pytz==2022.7.1
-typing_extensions==4.15.0
 certifi==2026.2.25
+typing_extensions==4.15.0
+urllib3==1.26.20
+cryptography==46.0.5
+gunicorn
