@@ -9,7 +9,6 @@ jobs:
   # 2) SONARCLOUD ANALYSIS
   sonarcloud:
     name: SonarCloud Code Analysis
-    needs: pytest-coverage
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
