@@ -32,6 +32,7 @@ ALLOWED_HOSTS = [
     'railguard-env.eba-jxvqtmpn.us-east-1.elasticbeanstalk.com',
     'localhost',
     '127.0.0.1',
+    'http://application-env.eba-22zkppyu.us-east-1.elasticbeanstalk.com/'
 ]
 
 
