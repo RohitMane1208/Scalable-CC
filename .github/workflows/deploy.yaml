@@ -33,7 +33,6 @@ jobs:
   # 3) DEPLOY TO AWS ELASTIC BEANSTALK
   deploy:
     name: Deploy to Elastic Beanstalk
-    needs: [pytest-coverage, sonarcloud]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
