@@ -30,7 +30,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-  # 2) DEPLOYing TO AWS ELASTIC BEANSTALK
+  # 2) DEPLOYING TO AWS ELASTIC BEANSTALK
   deploy:
     name: Deploy to Elastic Beanstalk
     runs-on: ubuntu-latest
