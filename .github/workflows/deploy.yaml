@@ -1,0 +1,115 @@
+name: RailGuard CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  # 1) UNIT TESTS & COVERAGE
+  pytest-coverage:
+    name: Run Tests and Check Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9' # Matching your current environment
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-django pytest-cov
+
+      - name: Run Tests
+        run: |
+          pytest --cov=core --cov-report=xml
+
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml
+
+  # 2) SONARCLOUD ANALYSIS
+  sonarcloud:
+    name: SonarCloud Code Analysis
+    needs: pytest-coverage
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@v3
+        with:
+          args: >
+            -Dsonar.projectKey=RohitMane1208_Scalable-CC
+            -Dsonar.organization=rohitmane1208
+            -Dsonar.python.version=3.9
+            -Dsonar.python.coverage.reportPaths=coverage.xml
+            -Dsonar.exclusions=**/migrations/**,static/**,venv/**,db.sqlite3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  # 3) DEPLOY TO AWS ELASTIC BEANSTALK
+  deploy:
+    name: Deploy to Elastic Beanstalk
+    needs: [pytest-coverage, sonarcloud]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Prepare deployment package
+        run: |
+          # Zip the code excluding local dev files and venv
+          zip -r application.zip . -x "*.git*" "*.github*" "venv/*" "*.sqlite3" "__pycache__/*"
+
+      - name: Deploy to Elastic Beanstalk
+        uses: einaregilsson/beanstalk-deploy@v22
+        with:
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws_session_token: ${{ secrets.AWS_SESSION_TOKEN }} # Required for Vocareum/AWS Learner Lab
+          application_name: config # From your EB dashboard
+          environment_name: Application-env # From your error message
+          version_label: railguard-${{ github.run_number }}
+          region: us-east-1
+          deployment_package: application.zip
+
+  # 4) OWASP ZAP SECURITY SCAN
+  owasp-zap:
+    name: OWASP ZAP Security Scan
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: OWASP ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.15.0
+        with:
+          target: 'http://application-env.eba-22zkppyu.us-east-1.elasticbeanstalk.com/'
+          allow_issue_writing: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload ZAP Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-report
+          path: zap_report.html
