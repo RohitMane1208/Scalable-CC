@@ -20,12 +20,13 @@ jobs:
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v3
         with:
+          # Point Sonar to the specific source folder
           args: >
             -Dsonar.projectKey=RohitMane1208_Scalable-CC
             -Dsonar.organization=rohitmane1208
+            -Dsonar.sources=email_verifier
             -Dsonar.python.version=3.9
-            -Dsonar.python.coverage.reportPaths=coverage.xml
-            -Dsonar.exclusions=**/migrations/**,static/**,venv/**,db.sqlite3
+            -Dsonar.exclusions=**/migrations/**,**/static/**,venv/**,**/db.sqlite3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -40,19 +41,22 @@ jobs:
 
       - name: Prepare deployment package
         run: |
-          # Zip the code excluding local dev files and venv
-          zip -r application.zip . -x "*.git*" "*.github*" "venv/*" "*.sqlite3" "__pycache__/*"
+          # Change directory into your Django project root
+          cd email_verifier
+          # Zip everything inside THIS folder into the parent directory
+          zip -r ../application.zip . -x "venv/*" "*.sqlite3" "__pycache__/*"
 
       - name: Deploy to Elastic Beanstalk
         uses: einaregilsson/beanstalk-deploy@v22
         with:
           aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws_session_token: ${{ secrets.AWS_SESSION_TOKEN }} # Required for Vocareum/AWS Learner Lab
-          application_name: email_verifier # From your EB dashboard
-          environment_name: email-verifier-env # From your error message
+          aws_session_token: ${{ secrets.AWS_SESSION_TOKEN }}
+          application_name: email_verifier
+          environment_name: email-verifier-env
           version_label: Validation-${{ github.run_number }}
           region: us-east-1
+          # Point to the zip created in the parent directory
           deployment_package: application.zip
 
   # 3) OWASP ZAP SECURITY SCAN
@@ -72,7 +76,8 @@ jobs:
       - name: OWASP ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.15.0
         with:
-          target: 'https://gkudcyuzrc.execute-api.us-east-1.amazonaws.com/prod/email'
+          # Target your EB environment URL, not the API Gateway
+          target: 'http://email-verifier-env.eba-jxvqtmpn.us-east-1.elasticbeanstalk.com/'
           allow_issue_writing: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
