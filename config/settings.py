@@ -16,8 +16,8 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-AWS_VERIFY_URL = "https://yxs5d68z03.execute-api.us-east-1.amazonaws.com/prod/email/"
-AWS_STATUS_URL = "https://yxs5d68z03.execute-api.us-east-1.amazonaws.com/prod/status/"
+AWS_VERIFY_URL = "https://beequ71kgc.execute-api.us-east-1.amazonaws.com/prod/email/"
+AWS_STATUS_URL = "https://beequ71kgc.execute-api.us-east-1.amazonaws.com/prod/status/"
 AWS_API_KEY = "bNa8IiHwDVagcWGfQNHyw8WusXQazcXc1rrUnyX6"
 
 EMERGENCY_SERVICE_URL = "https://api.anuragktech.me/api/services/"
@@ -133,5 +133,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CSRF_TRUSTED_ORIGINS = [
     'https://93cc690fe36140d4a801628a076d6736.vfs.cloud9.us-east-1.amazonaws.com',
     'https://0a818923ed8c452fa05e322d3ef157aa.vfs.cloud9.us-east-1.amazonaws.com',
-    'http://scalable-app-env.eba-im2kyiiw.us-east-1.elasticbeanstalk.com/',
+    'http://scalable-app-env.eba-im2kyiiw.us-east-1.elasticbeanstalk.com',
 ]
