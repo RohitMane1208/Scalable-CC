@@ -16,8 +16,8 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-AWS_VERIFY_URL = "https://yxs5d68z03.execute-api.us-east-1.amazonaws.com/prod/email"
-AWS_STATUS_URL = "https://gkudcyuzrc.execute-api.us-east-1.amazonaws.com/prod/status"
+AWS_VERIFY_URL = "https://yxs5d68z03.execute-api.us-east-1.amazonaws.com/prod/email/"
+AWS_STATUS_URL = "https://yxs5d68z03.execute-api.us-east-1.amazonaws.com/prod/status/"
 
 AWS_API_KEY = "e3XIRF3O5TashYGZM5L6v5dMWzN5I8qYNeIiB8J5"
 
