@@ -18,15 +18,15 @@ class RailService:
         Uses the x-api-key for authentication via AWS API Gateway.
         """
         url = getattr(settings, 'AWS_STATUS_URL', None)
-        #api_key = getattr(settings, 'AWS_API_KEY', None)
+        api_key = getattr(settings, 'AWS_API_KEY', None)
         
         if not url or not api_key:
             return {"is_verified": False, "error": "API Configuration missing"}
             
-        # headers = {
-        #     "x-api-key": api_key,
-        #     "Content-Type": "application/json"
-        # }
+        headers = {
+            "x-api-key": api_key,
+            "Content-Type": "application/json"
+        }
 
         try:
             response = requests.get(
@@ -48,15 +48,15 @@ class RailService:
         Uses the x-api-key for authentication via AWS API Gateway.
         """
         url = getattr(settings, 'AWS_VERIFY_URL', None)
-        #api_key = getattr(settings, 'AWS_API_KEY', None)
+        api_key = getattr(settings, 'AWS_API_KEY', None)
         
         if not url or not api_key:
             return {"status": "fail", "message": "API Configuration missing"}
             
-        # headers = {
-        #     "x-api-key": api_key,
-        #     "Content-Type": "application/json"
-        # }
+        headers = {
+            "x-api-key": api_key,
+            "Content-Type": "application/json"
+        }
 
         try:
             response = requests.post(
