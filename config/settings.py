@@ -16,7 +16,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-AWS_VERIFY_URL = "https://gkudcyuzrc.execute-api.us-east-1.amazonaws.com/prod/email"
+AWS_VERIFY_URL = "https://yxs5d68z03.execute-api.us-east-1.amazonaws.com/prod/email"
 AWS_STATUS_URL = "https://gkudcyuzrc.execute-api.us-east-1.amazonaws.com/prod/status"
 
 AWS_API_KEY = "e3XIRF3O5TashYGZM5L6v5dMWzN5I8qYNeIiB8J5"
@@ -32,7 +32,7 @@ ALLOWED_HOSTS = [
     'railguard-env.eba-jxvqtmpn.us-east-1.elasticbeanstalk.com',
     'localhost',
     '127.0.0.1',
-    'application-env.eba-22zkppyu.us-east-1.elasticbeanstalk.com',
+    'scalable-app-env.eba-im2kyiiw.us-east-1.elasticbeanstalk.com',
 ]
 
 
@@ -134,5 +134,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CSRF_TRUSTED_ORIGINS = [
     'https://93cc690fe36140d4a801628a076d6736.vfs.cloud9.us-east-1.amazonaws.com',
     'https://0a818923ed8c452fa05e322d3ef157aa.vfs.cloud9.us-east-1.amazonaws.com',
-    'http://application-env.eba-22zkppyu.us-east-1.elasticbeanstalk.com'
+    'http://scalable-app-env.eba-im2kyiiw.us-east-1.elasticbeanstalk.com/',
 ]
