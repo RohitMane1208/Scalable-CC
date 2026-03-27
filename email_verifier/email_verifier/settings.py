@@ -11,7 +11,8 @@ ALLOWED_HOSTS = [
     '0a818923ed8c452fa05e322d3ef157aa.vfs.cloud9.us-east-1.amazonaws.com',
     'email-verifier-env.eba-jxvqtmpn.us-east-1.elasticbeanstalk.com',
     'localhost',
-    '127.0.0.1'
+    '127.0.0.1',
+    'email-api-env.eba-i8pnmynr.us-east-1.elasticbeanstalk.com'
 ]
 
 # Application definition
@@ -111,4 +112,5 @@ STATIC_URL = 'static/'
 CSRF_TRUSTED_ORIGINS = [
     'https://0a818923ed8c452fa05e322d3ef157aa.vfs.cloud9.us-east-1.amazonaws.com',
     'http://email-verifier-env.eba-jxvqtmpn.us-east-1.elasticbeanstalk.com/email/',
+    'http://email-api-env.eba-i8pnmynr.us-east-1.elasticbeanstalk.com/'
 ]
