@@ -1,84 +1,83 @@
-name: RailGuard CI/CD Pipeline
+# name: RailGuard CI/CD Pipeline
 
-on:
-  push:
-    branches:
-      - master
+# on:
+#   push:
+#     branches:
+#       - master
 
-jobs:
-  # 1) SONARCLOUD ANALYSIS
-  sonarcloud:
-    name: SonarCloud Code Analysis
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+# jobs:
+#   # 1) SONARCLOUD ANALYSIS
+#   sonarcloud:
+#     name: SonarCloud Code Analysis
+#     runs-on: ubuntu-latest
+#     continue-on-error: true
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
+#         with:
+#           fetch-depth: 0
 
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@v3
-        with:
-          args: >
-            -Dsonar.projectKey=RohitMane1208_Scalable-CC
-            -Dsonar.organization=rohitmane1208
-            -Dsonar.python.version=3.9
-            -Dsonar.python.coverage.reportPaths=coverage.xml
-            -Dsonar.exclusions=**/migrations/**,static/**,venv/**,db.sqlite3
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+#       - name: SonarCloud Scan
+#         uses: SonarSource/sonarcloud-github-action@v3
+#         with:
+#           args: >
+#             -Dsonar.projectKey=RohitMane1208_Scalable-CC
+#             -Dsonar.organization=rohitmane1208
+#             -Dsonar.python.version=3.9
+#             -Dsonar.python.coverage.reportPaths=coverage.xml
+#             -Dsonar.exclusions=**/migrations/**,static/**,venv/**,db.sqlite3
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-  # 2) DEPLOYING TO AWS ELASTIC BEANSTALK
-  deploy:
-    name: Deploy to Elastic Beanstalk
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+#   # 2) DEPLOYING TO AWS ELASTIC BEANSTALK
+#   deploy:
+#     name: Deploy to Elastic Beanstalk
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
 
-      - name: Prepare deployment package
-        run: |
-          # Zip the code excluding local dev files and venv
-          zip -r application.zip . -x "*.git*" "*.github*" "venv/*" "*.sqlite3" "__pycache__/*"
+#       - name: Prepare deployment package
+#         run: |
+#           # Zip the code excluding local dev files and venv
+#           zip -r application.zip . -x "*.git*" "*.github*" "venv/*" "*.sqlite3" "__pycache__/*"
 
-      - name: Deploy to Elastic Beanstalk
-        uses: einaregilsson/beanstalk-deploy@v22
-        with:
-          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws_session_token: ${{ secrets.AWS_SESSION_TOKEN }} # Required for Vocareum/AWS Learner Lab
-          application_name: Application # From your EB dashboard
-          environment_name: Application-env # From your error message
-          version_label: railguard-${{ github.run_number }}
-          region: us-east-1
-          deployment_package: application.zip
+#       - name: Deploy to Elastic Beanstalk
+#         uses: einaregilsson/beanstalk-deploy@v22
+#         with:
+#           aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#           aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#           application_name: Scalable-app # From your EB dashboard
+#           environment_name: scalable-app-env  # From your error message
+#           version_label: railguard-${{ github.run_number }}
+#           region: us-east-1
+#           deployment_package: application.zip
 
-  # 3) OWASP ZAP SECURITY SCAN
-  owasp-zap:
-    name: OWASP ZAP Security Scan
-    needs: deploy
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: read
-      actions: read
-      security-events: write
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+#   # 3) OWASP ZAP SECURITY SCAN
+#   owasp-zap:
+#     name: OWASP ZAP Security Scan
+#     needs: deploy
+#     runs-on: ubuntu-latest
+#     timeout-minutes: 15
+#     permissions:
+#       contents: read
+#       actions: read
+#       security-events: write
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
 
-      - name: OWASP ZAP Baseline Scan
-        uses: zaproxy/action-baseline@v0.15.0
-        with:
-          target: 'http://application-env.eba-22zkppyu.us-east-1.elasticbeanstalk.com/'
-          allow_issue_writing: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#       - name: OWASP ZAP Baseline Scan
+#         uses: zaproxy/action-baseline@v0.15.0
+#         with:
+#           target: 'http://scalable-app-env.eba-im2kyiiw.us-east-1.elasticbeanstalk.com/'
+#           allow_issue_writing: false
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload ZAP Report
-        uses: actions/upload-artifact@v4
-        with:
-          name: zap-report
-          path: zap_report.html
+#       - name: Upload ZAP Report
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: zap-report
+#           path: zap_report.html

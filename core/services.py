@@ -33,7 +33,7 @@ class RailService:
     @staticmethod
     def validate_and_send(email):
         """
-        Triggers the validation suite. Now handles raw text responses
+        Triggers the validation suite. Handles raw text responses
         to identify if a user is already verified.
         """
         url = getattr(settings, 'AWS_VERIFY_URL', None)
@@ -63,6 +63,38 @@ class RailService:
         except requests.RequestException as e:
             logger.error(f"Verification API Connection Error: {e}")
             return {"status": "fail", "message": "Connection failed."}
+
+    @staticmethod
+    def send_admin_alert(admin_email, user_email, service_details):
+        """
+        Sends an emergency trigger notification using the CloudMail API.
+        Uses multipart/form-data as required by the verified PowerShell test.
+        """
+        # The working URL from your PowerShell test
+        url = "https://2rsma0i53j.execute-api.us-east-1.amazonaws.com/prod/api/send/"
+        
+        # Exact field names confirmed by the successful test
+        payload = {
+            "to_email": admin_email,
+            "subject": f"EMERGENCY ALERT: {service_details}",
+            "message": f"User {user_email} has triggered an alert for: {service_details}.",
+            "from_name": "RailGuard Admin System"
+        }
+
+        try:
+            # We pass an empty dictionary to 'files' to force the requests library 
+            # to use 'multipart/form-data' encoding instead of a standard form.
+            response = requests.post(url, data=payload, files={}, timeout=10)
+            
+            logger.info(f"Admin Alert Status: {response.status_code}")
+            
+            if response.status_code == 200:
+                res_data = response.json()
+                return res_data.get("status") == "success"
+            return False
+        except Exception as e:
+            logger.error(f"Failed to connect to CloudMail API: {e}")
+            return False
 
     @staticmethod
     def trigger_emergency(city="Dublin"):

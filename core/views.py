@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 from django.views.decorators.http import require_POST
 from .services import RailService
-from .models import Ticket
+from .models import Ticket, EmergencyRequest
 
 logger = logging.getLogger(__name__)
 
@@ -53,12 +53,10 @@ def booking_page(request):
         request.session['ticket_id'] = str(ticket.id)
         return redirect('dashboard')
 
-    # Step 1: Initial check
     status_check = RailService.get_verification_status(email)
     if status_check.get("is_verified"):
         return process_login(email)
 
-    # Step 2: Trigger API
     api_response = RailService.validate_and_send(email)
     status = api_response.get("status")
 
@@ -79,22 +77,79 @@ def dashboard(request):
         messages.warning(request, "Secure Access Required. Please verify your identity.")
         return redirect('booking')
     
+    # Sort history so newest requests appear at the top
+    history = EmergencyRequest.objects.filter(user=active_ticket.passenger).order_by('-timestamp')
+
     route_info = STATION_DATA.get(active_ticket.train_id)
     city_context = route_info.get('city', 'Dublin') if route_info else 'Dublin'
     nearby_services = RailService.trigger_emergency(city=city_context)
 
-    context = {
-        "ticket": active_ticket, "route": route_info,
-        "emergency_services": nearby_services, "city": city_context, "alert_sent": False
-    }
-    
     if request.method == "POST":
-        category = request.POST.get("emergency_type")
-        RailService.trigger_emergency(city=city_context) 
-        messages.success(request, f"{category.upper()} Alert dispatched to Control Center in {city_context}.")
-        context["alert_sent"] = True
+        service_name = request.POST.get("service_name")
+        service_type = request.POST.get("service_type")
 
+        if service_name and service_type:
+            EmergencyRequest.objects.create(
+                user=active_ticket.passenger,
+                service_name=service_name,
+                service_type=service_type,
+                status="Active"
+            )
+
+            ADMIN_EMAIL = "rohitmane556@gmail.com"
+            RailService.send_admin_alert(
+                admin_email=ADMIN_EMAIL,
+                user_email=active_ticket.passenger.email,
+                service_details=f"{service_type}: {service_name} (City: {city_context})"
+            )
+
+            messages.success(request, f"Security alert for {service_name} has been sent to the Admin.")
+            return redirect('dashboard')
+        
+        category = request.POST.get("emergency_type")
+        if category:
+            RailService.trigger_emergency(city=city_context) 
+            messages.success(request, f"{category.upper()} Alert dispatched to Control Center in {city_context}.")
+            return redirect('dashboard')
+
+    context = {
+        "ticket": active_ticket, 
+        "route": route_info,
+        "emergency_services": nearby_services, 
+        "city": city_context,
+        "history": history
+    }
     return render(request, 'dashboard.html', context)
+
+@require_POST
+def cancel_emergency_request(request, request_id):
+    """
+    Cancels an active security request and notifies admin via the CloudMail API.
+    """
+    ticket_id = request.session.get('ticket_id')
+    active_ticket = Ticket.objects.filter(id=ticket_id, is_active=True).first()
+    
+    if not active_ticket:
+        return redirect('booking')
+
+    # Ensure the request belongs to the current passenger
+    emergency_req = get_object_or_404(EmergencyRequest, id=request_id, user=active_ticket.passenger)
+    
+    if emergency_req.status == "Active":
+        emergency_req.status = "Cancelled"
+        emergency_req.save()
+
+        # Notify Admin of the cancellation
+        ADMIN_EMAIL = "rohitmane556@gmail.com"
+        RailService.send_admin_alert(
+            admin_email=ADMIN_EMAIL,
+            user_email=active_ticket.passenger.email,
+            service_details=f"CANCELLED - {emergency_req.service_type}: {emergency_req.service_name}"
+        )
+        
+        messages.info(request, f"Emergency request for {emergency_req.service_name} has been cancelled.")
+    
+    return redirect('dashboard')
 
 @require_POST
 def cancel_ticket(request, ticket_id):
