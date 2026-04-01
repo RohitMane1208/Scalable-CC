@@ -33,7 +33,7 @@ def get_domain_suggestion(domain):
     return matches[0] if matches and matches[0] != domain else None
 
 def send_verification_email(email, verification_link):
-    api_url = "https://2rsma0i53j.execute-api.us-east-1.amazonaws.com/prod/api/send/"
+    api_url = "https://dfz5aavjml.execute-api.us-east-1.amazonaws.com/prod/api/send/"
     payload = {
         "to_email": email,
         "subject": "Verify Your Email - Action Required",
