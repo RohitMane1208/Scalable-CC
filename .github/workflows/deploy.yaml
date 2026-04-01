@@ -6,7 +6,7 @@ on:
       - master
 
 jobs:
-  # 1) SONARCLOUD ANALYSIS
+  # 1) SONARCLOUD ANALYSIS (UNCHANGED)
   sonarcloud:
     name: SonarCloud Code Analysis
     runs-on: ubuntu-latest
@@ -40,16 +40,15 @@ jobs:
 
       - name: Prepare deployment package
         run: |
-          # Zip the code excluding local dev files and venv
-          zip -r application.zip . -x "*.git*" "*.github*" "venv/*" "*.sqlite3" "__pycache__/*"
+          zip -r application.zip . -x "*.git*" "*.github*" "venv/*" "*.sqlite3" "__pycache__/*" "application.zip"
 
       - name: Deploy to Elastic Beanstalk
         uses: einaregilsson/beanstalk-deploy@v22
         with:
           aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          application_name: Scalable-app # From your EB dashboard
-          environment_name: scalable-app-env  # From your error message
+          application_name: Scalable-app
+          environment_name: scalable-app-env
           version_label: railguard-${{ github.run_number }}
           region: us-east-1
           deployment_package: application.zip
