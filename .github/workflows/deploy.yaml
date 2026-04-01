@@ -76,7 +76,6 @@ jobs:
       - name: OWASP ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.15.0
         with:
-          # Target your EB environment URL, not the API Gateway
           target: 'http://email-verifier-env.eba-jxvqtmpn.us-east-1.elasticbeanstalk.com/'
           allow_issue_writing: false
         env:
