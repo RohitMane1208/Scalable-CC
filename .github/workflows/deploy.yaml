@@ -6,7 +6,7 @@ on:
       - master
 
 jobs:
-  # 1) SONARCLOUD ANALYSIS (UNCHANGED)
+  # 1) SONARCLOUD ANALYSIS
   sonarcloud:
     name: SonarCloud Code Analysis
     runs-on: ubuntu-latest
